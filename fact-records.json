@@ -1,0 +1,1732 @@
+{
+ "fact_standard": {
+  "quote": "the exact sentence from that source, so anyone can check it without re-researching. Null when status is unverifiable — a quote is never fabricated.",
+  "source": "a primary source where possible: the original paper (ISSCC, Hot Chips, MICRO, ISCA), the vendor's manual or datasheet, or the patent. Wikipedia and blogs should only be pointers to those.",
+  "status_meanings": {
+   "corrected": "the wiki value was wrong and has been fixed; previous_value keeps the old value",
+   "disputed": "sources disagree; both are listed in the record's notes",
+   "unverifiable": "the fact appears only in secondary sources; no primary source could be obtained",
+   "verified": "the value in the wiki matches the primary source"
+  },
+  "status_values": [
+   "verified",
+   "corrected",
+   "disputed",
+   "unverifiable"
+  ]
+ },
+ "record_fields": [
+  "entry",
+  "fact",
+  "status",
+  "previous_value",
+  "current_value",
+  "source {type, title, publisher, url, locator}",
+  "quote",
+  "date_checked",
+  "notes"
+ ],
+ "records": [
+  {
+   "entry": "Google TPU v5p",
+   "fact": "Peak BF16 compute, HBM capacity and HBM bandwidth per chip",
+   "status": "corrected",
+   "previous_value": "~95 BF16 TFLOPS/chip",
+   "current_value": "459 BF16 TFLOPS/chip, 95 GiB HBM per chip, 2,765 GB/s HBM bandwidth per chip",
+   "source": {
+    "type": "primary",
+    "title": "TPU v5p | Google Cloud Documentation",
+    "publisher": "Google Cloud",
+    "url": "https://docs.cloud.google.com/tpu/docs/v5p",
+    "locator": "System architecture — key specifications table for TPU v5p"
+   },
+   "quote": "Peak compute per chip (BF16) (TFLOPs) | 459\nHBM capacity per chip (GiB) | 95\nHBM bandwidth per chip (GBps) | 2765",
+   "date_checked": "2026-11-22",
+   "notes": "Primary source is a specification table, not prose, so the quote is the verbatim table rows rather than a sentence. The old '~95 BF16 TFLOPS' value appears to have conflated the 95 GiB HBM capacity with compute."
+  },
+  {
+   "entry": "SiFive P670",
+   "fact": "Pipeline depth and issue width",
+   "status": "corrected",
+   "previous_value": "16-stage pipeline, triple-issue",
+   "current_value": "13-stage (thirteen-stage), 4-issue (four-issue), out-of-order pipeline",
+   "source": {
+    "type": "primary",
+    "title": "SiFive Performance P600 Series",
+    "publisher": "SiFive",
+    "url": "https://www.sifive.com/cores/performance-p600",
+    "locator": "P650/P670 section, opening paragraphs"
+   },
+   "quote": "The P670 vector application processor features a thirteen-stage, four-issue, out-of-order pipeline and offers best-in-class performance, with >50% uplift over the SiFive Performance P550, while maintaining a significant performance-per-area advantage compared to the Arm® Cortex®-A78.",
+   "date_checked": "2026-11-22",
+   "notes": "Same wording is used in SiFive's P600 product brief, which also lists P670 decode width 4 and 13 pipeline stages in its comparison table."
+  },
+  {
+   "entry": "SiFive P670",
+   "fact": "RISC-V Vector Extension version supported",
+   "status": "corrected",
+   "previous_value": "RISC-V Vector Extension 2.0",
+   "current_value": "RISC-V Vector Extension 1.0 (ratified v1.0 specification), 2x 128-bit Vector ALUs",
+   "source": {
+    "type": "primary",
+    "title": "SiFive's New High-Performance Processors Offer a Significant Upgrade for Wearable and Consumer Products",
+    "publisher": "SiFive, Inc.",
+    "url": "https://www.sifive.com/press/sifives-new-high-performance-processors-offer-a-significant",
+    "locator": "SiFive Performance P670 feature list (press release, November 1, 2022)"
+   },
+   "quote": "includes a 2x 128-bit Vector ALUs compliant with the ratified RISC-V Vector v1.0 specification",
+   "date_checked": "2026-11-22",
+   "notes": "Quote is a verbatim bullet from the P670 feature list in SiFive's launch press release. The P600 product page corroborates with 'Full, Out-of-Order, RISC-V Vector implementation, based on the ratified RISC-V Vector v1.0 Specification' in the Features list. No ratified Vector 2.0 exists in SiFive's P670 materials."
+  },
+  {
+   "entry": "Intel 4004",
+   "fact": "Building blocks — no branch prediction unit; simple 4-bit CPU with fixed instruction cycle",
+   "status": "corrected",
+   "previous_value": "Fetch + branch prediction listed among its building blocks",
+   "current_value": "Complete 4-bit parallel CPU; 1-word instructions are 8 bits requiring 8 clock periods (one instruction cycle), 2-word instructions 16 clock periods; no branch prediction block in the datasheet architecture",
+   "source": {
+    "type": "primary",
+    "title": "4004 Single Chip 4-Bit P-Channel Microprocessor (Intel 4004 datasheet)",
+    "publisher": "Intel Corporation",
+    "url": "https://ia601509.us.archive.org/27/items/intel-4004/intel-4004_text.pdf",
+    "locator": "Page 8-15, description paragraph; Instruction Set Format section, page 8-17"
+   },
+   "quote": "The Intel® 4004 is a complete 4-bit parallel central processing unit (CPU).",
+   "date_checked": "2026-11-22",
+   "notes": "Absence of branch prediction cannot be proved by a single positive sentence; the correction rests on the datasheet's complete architectural description, which lists the accumulator, index registers, pointer stack, instruction encoding/decoder, timing and control — with no prediction or speculative-fetch mechanism — and defines the fixed cycle in the Instruction Set Format section: a 1-word instruction is 8 bits requiring 8 clock periods (instruction cycle) and a 2-word instruction is 16 bits requiring 16 clock periods (2 instruction cycles). Conditional branching exists (JCN), but it is resolved in the normal instruction cycle, not predicted. Datasheet text is via Intel's original document archived at archive.org; OCR in the archived copy is imperfect outside the quoted sentence."
+  },
+  {
+   "entry": "NVIDIA Ada AD102 (GeForce RTX 4090)",
+   "fact": "Memory type",
+   "status": "corrected",
+   "previous_value": "HBM",
+   "current_value": "24 GB GDDR6X (G6X), 384-bit memory interface — not HBM",
+   "source": {
+    "type": "primary",
+    "title": "GeForce RTX 4090",
+    "publisher": "NVIDIA",
+    "url": "https://www.nvidia.com/en-eu/geforce/graphics-cards/40-series/rtx-4090/",
+    "locator": "Intro paragraph and Specs / Memory Specs table"
+   },
+   "quote": "It's powered by the NVIDIA Ada Lovelace architecture and comes with 24 GB of G6X memory to deliver the ultimate experience for gamers and creators.",
+   "date_checked": "2026-11-22",
+   "notes": "NVIDIA's Specs table on the same page lists Memory Type as GDDR6X and Standard Memory Config as 24 GB GDDR6X. AD102 is the GPU in the RTX 4090; HBM is used on NVIDIA's data-center parts (e.g. H100), not on Ada consumer cards."
+  },
+  {
+   "entry": "AMD Navi 31 (Radeon RX 7900 XTX)",
+   "fact": "Memory type",
+   "status": "corrected",
+   "previous_value": "HBM",
+   "current_value": "24 GB GDDR6 at 20 Gbps over a 384-bit memory bus — not HBM",
+   "source": {
+    "type": "primary",
+    "title": "AMD Unveils World's Most Advanced Gaming Graphics Cards, Built on Groundbreaking AMD RDNA 3 Architecture with Chiplet Design",
+    "publisher": "Advanced Micro Devices, Inc. (AMD)",
+    "url": "https://ir.amd.com/news-events/press-releases/detail/1099/amd-unveils-worlds-most-advanced-gaming-graphics-cards-built-on-groundbreaking-amd-rdna-3-architecture-with-chiplet-design",
+    "locator": "'Expanded Memory and Wider Memory Bus' bullet, press release dated Nov. 03, 2022"
+   },
+   "quote": "To meet the growing requirements of today's demanding titles, the new graphics cards feature up to 24GB of high-speed GDDR6 memory running at 20Gbps over a 384-bit memory bus.",
+   "date_checked": "2026-11-22",
+   "notes": "Quote covers the RX 7900 Series; the press release's specification table on the same page lists the RX 7900 XTX (the Navi 31 flagship) at 24 GB GDDR6, 384-bit. AMD's current RX 7900 XTX product page likewise lists Memory Type GDDR6. Navi 31's on-package memory-adjacent dies are Infinity Cache MCDs, not HBM stacks."
+  },
+  {
+   "entry": "Broadcom Tomahawk 5",
+   "fact": "Packet buffer architecture — shared buffer, not VOQ-partitioned",
+   "status": "corrected",
+   "previous_value": "VOQ (virtual output queue) buffer architecture implied / not shared",
+   "current_value": "Shared-buffer architecture: 51.2 Tbps shared-buffer architecture with advanced shared packet buffering",
+   "source": {
+    "type": "primary",
+    "title": "Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads",
+    "publisher": "Broadcom Inc. (via GlobeNewswire, republished by Nasdaq)",
+    "url": "https://www.nasdaq.com/press-release/broadcom-ships-tomahawk-5-industrys-highest-bandwidth-switch-chip-to-accelerate-ai-ml",
+    "locator": "StrataXGS Tomahawk 5 Series Key Features for AI/ML list, press release dated Aug. 16, 2022"
+   },
+   "quote": "The industry's most advanced 51.2 Tbps shared-buffer architecture, providing the highest performance and lowest tail latency for RoCEv2 and other new RDMA protocols.",
+   "date_checked": "2026-11-22",
+   "notes": "This is Broadcom's own launch press release distributed via GlobeNewswire; the same release also states Tomahawk 5 offers 'advanced shared packet buffering' among its AI/ML features. Broadcom's public product brief for BCM78900 is gated, so the press release is the strongest freely available primary source. Secondary buffer references (e.g. forwardingplane.net) describe Tomahawk 5 as a fully unified shared buffer, consistent with this."
+  },
+  {
+   "entry": "NVIDIA Spectrum-4",
+   "fact": "Packet buffer architecture — fully shared buffer, not VOQ",
+   "status": "corrected",
+   "previous_value": "VOQ (virtual output queue)",
+   "current_value": "On-chip fully-shared packet buffering (dynamic, flexible shared buffers)",
+   "source": {
+    "type": "primary",
+    "title": "Introduction | NVIDIA Spectrum-4 SN5000 2U Switch Systems Hardware User Manual",
+    "publisher": "NVIDIA",
+    "url": "https://networking-docs.nvidia.com/sn5000hw/introduction",
+    "locator": "Introduction, paragraph describing SN5000 / Spectrum-4 ASIC (manual last updated December 07, 2025)"
+   },
+   "quote": "The SN5000 series provides full wire speed, cut through-mode latency, on-chip fully-shared 128MB packet buffering, and flexible port use in addition to advanced capabilities.",
+   "date_checked": "2026-11-22",
+   "notes": "Same manual also states the SN5000 series 'features dynamic, flexible shared buffers'. Note a size discrepancy between NVIDIA primary sources: the SN5000 datasheet/product brief says 'fully shared 160 MB packet buffers' while this hardware manual says 128MB — the shared (not VOQ) nature of the buffer is consistent across both; the buffer size itself is recorded separately as disputed."
+  },
+  {
+   "entry": "NVIDIA Spectrum-4 (SN5000)",
+   "fact": "Packet buffer size",
+   "status": "disputed",
+   "previous_value": null,
+   "current_value": "128 MB per the SN5000 hardware user manual; 160 MB per the SN5000 datasheet/product brief — both NVIDIA primary sources",
+   "source": {
+    "type": "primary",
+    "title": "Introduction | NVIDIA Spectrum-4 SN5000 2U Switch Systems Hardware User Manual",
+    "publisher": "NVIDIA",
+    "url": "https://networking-docs.nvidia.com/sn5000hw/introduction",
+    "locator": "Introduction paragraph (manual); SN5000 datasheet/product brief for the 160 MB figure"
+   },
+   "quote": "The SN5000 series provides full wire speed, cut through-mode latency, on-chip fully-shared 128MB packet buffering, and flexible port use in addition to advanced capabilities.",
+   "date_checked": "2026-11-22",
+   "notes": "Disputed between NVIDIA's own documents: hardware user manual says 128MB; datasheet/product brief says 'fully shared 160 MB packet buffers' (figure as reported from the datasheet, Nov 22, 2026). The wiki should state no single buffer size for Spectrum-4 until NVIDIA reconciles this, or state both with sources."
+  },
+  {
+   "entry": "Tesla Dojo D1",
+   "fact": "354 training nodes per D1 die; 440 MB SRAM per die",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Tesla, Hot Chips 34 (2022), Dojo microarchitecture talk",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Each chip has 354 DOJO processing nodes per die and 440MB of SRAM.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Tesla Dojo D1",
+   "fact": "Spec line previously read “354 training tiles per system tile”",
+   "status": "corrected",
+   "previous_value": "354 training tiles per system tile",
+   "current_value": "354 training nodes per D1 die — 25 dies form one training tile",
+   "source": {
+    "type": "primary",
+    "title": "Tesla, Hot Chips 34 (2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Each node has 1.25MB of SRAM.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Tesla Dojo D1",
+   "fact": "Peak BF16/CFP8 throughput per die",
+   "status": "disputed",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Tesla Hot Chips 34 vs later Tesla-derived summaries",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "362 TFLOPS and 376 TFLOPS both circulate from Tesla-derived material; the wiki states the range instead of picking one."
+  },
+  {
+   "entry": "Tesla Dojo D1",
+   "fact": "50 billion transistors",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "Secondary reporting of Tesla AI Day 2021",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Widely reported, but not stated in the Hot Chips 34 deck."
+  },
+  {
+   "entry": "AWS Inferentia2 & Trainium",
+   "fact": "NeuronCore-v2 has four heterogeneous compute engines (Tensor, Vector, Scalar, GpSimd)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AWS Neuron documentation — Trainium/Inferentia2 Architecture Guide for NKI",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "A NeuronCore-v2 consists of four heterogeneous compute engines (Tensor, Vector, Scalar, and GpSimd), each designed to accelerate different types of operators in modern machine learning models.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AWS Inferentia2 & Trainium",
+   "fact": "24 MiB SBUF + 2 MiB PSUM, software-managed",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AWS Neuron documentation — Trainium/Inferentia2 Architecture Guide for NKI",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Memory-wise, a NeuronCore-v2 consists of two software-managed on-chip SRAMs, a 24MiB SBUF as the main data storage and a 2MiB PSUM as a dedicated accumulation buffer for Tensor Engine.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AWS Inferentia2 & Trainium",
+   "fact": "Two NeuronCore-v2 per device; 32 GiB HBM at 820 GB/s",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AWS Neuron documentation — Trainium/Inferentia2 Architecture Guide for NKI",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "2 NeuronCores (v2). 2 HBM stacks with a total device memory capacity of 32GiB and bandwidth of 820 GB/s.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "SambaNova SN40L",
+   "fact": "1,040 PCUs and 1,040 PMUs per socket",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "SambaNova, Hot Chips 2024 — SN40L RDU presentation",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "1040 PCUs and PMUs PCU: Compute unit PMU: Memory unit S: Mesh switches AGCU: Portal to off-chip memory and IO",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "SambaNova SN40L",
+   "fact": "Three-tier memory: 520 MB SRAM / 64 GB HBM / 1.5 TB DDR; 638 BF16 TFLOPS; 102B transistors, TSMC 5 nm",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "SambaNova, Hot Chips 2024 — SN40L RDU presentation",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "5nm TSMC 3-tier Dataflow Memory … 520 MB On-Chip Memory, 64 GB High Bandwidth Memory, 1.5 TB High Capacity Memory, 638 TFLOPS (bf16), 102B Transistors.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel Gaudi 2 (Habana)",
+   "fact": "Two compute engines: MME + programmable TPC cluster; 96 GB HBM2e at 2.45 TB/s; 48 MB SRAM",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel/Habana, Intel Gaudi2 AI Accelerators white paper (v2.0, Oct 2023)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Intel Gaudi2 Memory subsystem includes 96 GB of HBM2E memories delivering 2.45 TB/sec bandwidth, in addition to a 48 MB of local SRAM with sufficient bandwidth to allow MME, TPC, DMAs and RDMA NICs to operate in parallel.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel Gaudi 2 (Habana)",
+   "fact": "24 TPCs; 24×100 GbE RoCE v2 integrated",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel/Habana, Gaudi2 HL-225H datasheet (Oct 2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Intel Gaudi2 AI accelerator offers unmatched scalability of 2.4 Terabits networking capacity with native integration of 24x100 GbE RoCE v2 RDMA ports",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel Gaudi 2 (Habana)",
+   "fact": "MME is a 256×256 MAC output-stationary systolic array; Gaudi 2 has two MMEs and 24 TPCs",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Debunking the CUDA Myth, ISCA 2025 (architecture background, citing Habana)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Gaudi-2 features two MMEs and 24 TPCs, which together provide high throughput by pipelining computations between the MMEs and TPCs.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Meta MTIA v1",
+   "fact": "64 PEs in an 8×8 grid; each PE has two RISC-V cores (one with vector extension) and 128 KB local SRAM",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Meta, MTIA v1 announcement / ISCA 2023 paper (Firoozshahian et al.)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Each PE also has 128 KB of local SRAM memory for quickly storing and operating on data.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Meta MTIA v1",
+   "fact": "128 MB shared on-chip SRAM; LPDDR5 off-chip, up to 128 GB",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Meta, MTIA v1 announcement (May 2023)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The chip also has 128 MB of on-chip SRAM shared among all the PEs, which provides higher bandwidth and much lower latency for frequently accessed data and instructions.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Meta MTIA v1",
+   "fact": "TSMC 7 nm, 800 MHz, 102.4 INT8 TOPS, 51.2 FP16 TFLOPS, 25 W TDP",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Meta, MTIA v1 announcement (May 2023)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The first chip was designed in 2020 and built in TSMC's 7nm process and runs at 800 MHz, providing 102.4 TOPS at INT8 precision and 51.2 TFLOPS at FP16 precision. It has a thermal design power (TDP) of 25 W.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Microsoft Maia 100",
+   "fact": "105 billion transistors on 5 nm",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Microsoft Azure blog, Ignite 2023 — purpose-built cloud infrastructure",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Maia 100 is the first generation in the series, with 105 billion transistors, making it one of the largest chips on 5nm process technology.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Microsoft Maia 100",
+   "fact": "Key-ideas line previously claimed a “16× RISC-V control vector unit” design",
+   "status": "corrected",
+   "previous_value": "16× RISC-V control vector unit class design",
+   "current_value": "16 clusters × 4 tiles; per-tile 16×R×16 tensor unit + custom-ISA vector processor (RISC-V is not claimed by Microsoft's disclosure)",
+   "source": {
+    "type": "primary",
+    "title": "Microsoft, Hot Chips 2024 — Inside Maia 100",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Quote unavailable in text form — the Hot Chips deck is slideware; the correction rests on the deck's tile/cluster organisation as reported from the primary presentation."
+  },
+  {
+   "entry": "Microsoft Maia 100",
+   "fact": "64 GB HBM2e at 1.8 TB/s; ~820 mm²; 500 W provisioned / 700 W design TDP",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Microsoft, Hot Chips 2024 — Inside Maia 100",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Figures from Microsoft's Hot Chips 2024 presentation; slide deck, so no verbatim sentence is quoted here rather than inventing one."
+  },
+  {
+   "entry": "AMD VCN 4.0 / Media Engine",
+   "fact": "VCN 4.0 adds AV1 encode; introduced with RDNA 3",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "AMD product material / Linux enablement reporting of AMD's own patches",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "VCN 4.0 was introduced with RDNA 3 and adds AV1 encode.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD VCN 4.0 / Media Engine",
+   "fact": "VCN 4.0 media engines support AV1 encode/decode and 8K HEVC decode (Ryzen Embedded 8000 brief)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AMD blog — Ryzen Embedded 8000 / Advantech (2026)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "integrated VCN 4.0 media engines supporting AV1 encode/decode and 8K HEVC decode",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD VCN 4.0 / Media Engine",
+   "fact": "Internal pipeline stages of the VCN core",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "none",
+    "title": "—",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "AMD publishes codec support and rates, not a VCN block diagram; no primary source names the internal stages, so none are claimed here."
+  },
+  {
+   "entry": "Intel Xe Media Engine / Quick Sync",
+   "fact": "Media engine components: MFX, SFC, Video Quality Engine; independent of compute engines",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel oneAPI GPU Optimisation Guide — Media Engine Hardware",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Several components can be used by applications: MFX/Multi-format codec: hardware decode and encode. SFC/scaler and format conversion … Video Quality Engine: multiple frame processing operations, such as denoise and deinterlace.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel Xe Media Engine / Quick Sync",
+   "fact": "Media engine runs completely independent of compute engines",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel oneAPI GPU Optimisation Guide — Media Engine Hardware",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The media engine runs completely independent of compute engines (vector and matrix engines).",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel Xe Media Engine / Quick Sync",
+   "fact": "Xe Media Engine (Arc) consists of two MFX units",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel Arc A-series product brief / Xe Media Engine description",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Xe Media Engine consists of two multi-format codec (MFX) units capable of both encode and decode functions.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Qualcomm Spectra ISP + Video (Snapdragon 8 Gen 3)",
+   "fact": "Cognitive ISP, triple 18-bit ISPs; semantic segmentation up to 12 layers",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Qualcomm Snapdragon 8 Gen 3 Mobile Platform Product Brief (87-71408-1 Rev G)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Cognitive ISP, Triple 18-bit ISPs … Real-time Semantic Segmentation photo and video processing (up to 12 layers)",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Qualcomm Spectra ISP + Video (Snapdragon 8 Gen 3)",
+   "fact": "Video: 8K HDR at 30 fps, 4K at 120 fps; up to 200 MP photo capture",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Qualcomm Snapdragon 8 Gen 3 Mobile Platform Product Brief",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "8K HDR video capture + 64 MP photo capture @ 30 FPS, 4K video capture @ 120 FPS",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Chips&Media WAVE Codec IP",
+   "fact": "WAVE6/WAVE627: single core compresses 4K60 at 500 MHz; AV1+HEVC+AVC encode",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Chips&Media WAVE627 launch release (June 2021)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "This IP core is based on a more defined architecture design and delivers sophisticated encoding quality with a single core to compress 4K60fps@500MHz on the proven architecture of Chips&Media.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Chips&Media WAVE Codec IP",
+   "fact": "On-the-fly entropy engine inside the VCE",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Chips&Media WAVE627 launch release (June 2021)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Video Coding Engine (VCE) incorporates an on-the-fly entropy engine for simpler architecture and minimum control.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Chips&Media WAVE Codec IP",
+   "fact": "CFrame integrated frame-buffer compression block",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Chips&Media WAVE627 launch release (June 2021)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Like other IPs by Chips&Media, a specialized hardware block called CFrameTM is integrated into the video IP.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "CV3: next-generation CVflow with on-chip NVP up to 500 eTOPS; up to 16 Cortex-A78AE cores",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Ambarella CV3 launch release (CES 2022), via VentureBeat",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The company said this drove the development of the on-chip neural vector processor (NVP), with up to 500 eTOPS of AI compute",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "CV3-AD685: 12 Cortex-A78AE + 3 dual-core lockstep Cortex-R52 pairs; Samsung 5 nm; ASIL-D safety island",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Ambarella CV3-AD685 announcement (CES 2023), via Electronic Specifier",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Twelve Arm Cortex A78AE CPUs and 3 dual-core, lockstep pairs of Cortex-R52 CPUs are included. CV3-AD685 is targeting ASIL-B on the chip level, with an ASIL-D safety island.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "ISP supports up to 12 physical or 20 virtual cameras simultaneously",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Ambarella CV3 launch material",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "By simultaneously supporting up to 12 physical or 20 virtual cameras, a single CV3 can process the entire sensor suite",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ merges a burst of underexposed RAW frames (align + temporal merge)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Hasinoff et al., Google Research — Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "The paper defines the burst/align/merge pipeline; quoted here by description because the paper's text was not re-fetched verbatim in this pass — status reflects the paper's existence and the pipeline it specifies."
+  },
+  {
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Tensor G3 imaging DSP codename 'Callisto'; TPU codename 'Rio'",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "Secondary reporting only (Android coverage of Tensor G3)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Google has published no Tensor G3 spec sheet or block diagram naming these blocks; codenames circulate only in secondary sources."
+  },
+  {
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Tensor G3 ISP hardware block diagram / throughput numbers",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "none",
+    "title": "—",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Google publishes no ISP throughput, bit-depth or block-level figures for Tensor G3. None are stated in this entry."
+  },
+  {
+   "entry": "Sony BIONZ XR + AI Processing Unit (α7R V)",
+   "fact": "α7R V pairs a new dedicated AI processing unit with BIONZ XR — a first in an Alpha camera",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Sony Electronics press release — Alpha 7R V (Oct 26, 2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Alpha 7R V combines Sony's highest resolution image sensor in an Alpha camera with a new AI (artificial intelligence) processing unit dedicated to AI-based image recognition – a first in any Alpha camera – as well as the powerful BIONZ XR™ image processing engine",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Sony BIONZ XR + AI Processing Unit (α7R V)",
+   "fact": "AI unit uses human form/pose estimation for recognition AF",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Sony Electronics press release — Alpha 7R V (Oct 26, 2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The state-of-the-art AI processing uses detailed information about human form and pose estimation to dramatically improve recognition accuracy beyond systems which only detect face and eye",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Sony BIONZ XR + AI Processing Unit (α7R V)",
+   "fact": "AI Processing Unit TOPS / process node / internal architecture",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "none",
+    "title": "—",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Sony publishes no performance figure, process or block diagram for the AI Processing Unit. None is stated in this entry."
+  },
+  {
+   "entry": "Canon DIGIC X",
+   "fact": "EOS R5 records 8K movies uncropped at up to 29.97 fps with DIGIC X",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Canon EOS R5 product documentation",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "the EOS R5 is able to record 8K movies (uncropped, at up to 29.97 fps)",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Canon DIGIC X",
+   "fact": "Deep-learning subject detection for people and animals",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Canon EOS R5 product documentation",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Subject tracking of People and Animals using Deep Learning Technology",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Canon DIGIC X",
+   "fact": "DIGIC X internal architecture (cores, process, accelerator blocks)",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "none",
+    "title": "—",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Canon has never published DIGIC X internals. This entry names only documented functions."
+  },
+  {
+   "entry": "MediaTek Imagiq 790 (Dimensity 9000)",
+   "fact": "This entry was filed as “Imagiq 790 (Dimensity 9200+)” with “8K30 video”",
+   "status": "corrected",
+   "previous_value": "Imagiq 790 (Dimensity 9200+) · 8K30 video",
+   "current_value": "Imagiq 790 (Dimensity 9000) · 18-bit HDR-ISP, 320 MP, 9 Gpixel/s; the 9200 series uses Imagiq 890, and Dimensity 9000's specified max video capture is 4K",
+   "source": {
+    "type": "primary",
+    "title": "MediaTek Dimensity 9000 product page (Imagiq 790) + Dimensity 9200 specifications",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "MediaTek Imagiq 790 — A flagship 18-bit HDR-ISP design gives users the first opportunity to capture video on three cameras simultaneously",
+   "date_checked": "2026-11-22",
+   "notes": "MediaTek's own Dimensity 9000 specifications list Imagiq 790 and a 4K maximum video-capture resolution; the 9200's ISP is the Imagiq 890 per its published specifications."
+  },
+  {
+   "entry": "MediaTek Imagiq 790 (Dimensity 9000)",
+   "fact": "9 Gpixel/s ISP; world's first simultaneous triple-camera 18-bit HDR video; 320 MP support",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "MediaTek Dimensity 9000 product page",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Most Powerful 9Gpixel/s ISP — World's 1st simultaneous triple camera 18-bit HDR video recording (three cameras recording with three exposures per frame) — World's 1st 320MP camera support for smartphones",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Samsung Exynos 2400 ISP",
+   "fact": "ISP supports up to 320 MP sensors; Zoom Anyplace gives 4× close-ups of moving objects from a 200 MP sensor",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Samsung System LSI Tech Day 2023 — Exynos 2400 showcase (Samsung)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Samsung introduced the Zoom Anyplace technology, powered by a 200-million-pixel image sensor, enabling users to capture 4x close-ups of moving objects without image degradation.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Samsung Exynos 2400 ISP",
+   "fact": "NPU structure (2 GNPU + 2 SNPU, ~17K MAC) and any TOPS figure",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "Secondary reporting (Notebookcheck / launch coverage)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Samsung quotes only a 14.7× AI uplift vs Exynos 2200; it publishes no NPU TOPS or ISP block diagram for Exynos 2400."
+  },
+  {
+   "entry": "Qualcomm Snapdragon 8 Gen 3",
+   "fact": "Hexagon NPU: fused scalar/vector/tensor accelerators, Hexagon Direct Link, upgraded micro-tile inferencing; INT4/8/16 + FP16",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Qualcomm Snapdragon 8 Gen 3 Product Brief (87-71408-1 Rev G)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Fused AI accelerator architecture • Hexagon scalar, vector, and tensor accelerators • Hexagon Direct Link • Upgraded Micro Tile Inferencing • Support for all precisions (INT4, INT8, INT16, FP16)",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Qualcomm Snapdragon 8 Gen 3",
+   "fact": "Prime-core clock",
+   "status": "disputed",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Qualcomm product brief vs Samsung 'for Galaxy' variant",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Qualcomm's brief lists the prime core up to 3.3 GHz (with 3.0/3.3 GHz versions noted); the Samsung-exclusive variant runs up to 3.39 GHz. Both are vendor-shipped configurations."
+  },
+  {
+   "entry": "Qualcomm Snapdragon 8 Gen 3",
+   "fact": "CPU layout 1 prime + 5 performance + 2 efficiency; LPDDR5X to 24 GB at 4,800 MHz",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Qualcomm Snapdragon 8 Gen 3 Product Brief",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Memory Density: Up to 24 GB • Support for LP-DDR5x memory, up to 4800 MHz",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "MediaTek Dimensity 9300",
+   "fact": "World's first flagship phone chip using exclusively big cores: 4× Cortex-X4 + 4× Cortex-A720",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "MediaTek Dimensity 9300 product page",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Dimensity 9300 is the world's first 5G smartphone chip to exclusively use all big cores: four Cortex-X4 and four -A720 processors that give enthusiasts the ultimate performance.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "MediaTek Dimensity 9300",
+   "fact": "4× X4 up to 3.25 GHz; 4× A720 up to 2.0 GHz; 18 MB L3 + SLC (+29%)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "MediaTek Dimensity 9300 product page — specifications",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "4X Cortex-X4 performance cores up to 3.25GHz — 4X Cortex-A720 efficiency cores up to 2.0GHz — 18MB L3 + SLC cache: 29% Larger than previous generation",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "MediaTek Dimensity 9300",
+   "fact": "APU 790 runs 7B LLM at 20 tokens/s; supports up to 33B parameters",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "MediaTek Dimensity 9300 product page",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "7B parameters AI LLM speed — 20 tokens/ sec. … Supports from 1B, 7B, 13B to 33B parameter AI LLMs",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Google Tensor G3",
+   "fact": "Tensor G3 works with Titan M2; Face Unlock meets Android's highest biometric class",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Google, Pixel 8 / Tensor G3 announcement (Oct 2023)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Tensor G3 works in tandem with the Titan M2 security chip to keep your data safe",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Google Tensor G3",
+   "fact": "9-core CPU configuration and clocks; TPU/DSP codenames",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "Secondary reporting only",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Google publishes no Tensor G3 specification sheet. The 1×X3 + 4×A715 + 4×A510 layout is uniformly reported by secondary sources but has no primary-source confirmation."
+  },
+  {
+   "entry": "NVIDIA Jetson AGX Orin",
+   "fact": "Ampere GPU with 2,048 CUDA cores, 64 Tensor Cores and 2 DLA engines delivers up to 275 TOPS",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Jetson AGX Orin Developer Kit Reviewer's Guide",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The NVIDIA® Orin System-on-Chip (SoC) based on the NVIDIA Ampere GPU architecture with 2048 CUDA cores, 64 Tensor Cores, and 2 Deep Learning Accelerator (DLA) engines delivers up to 275 TOPS of raw AI performance.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "NVIDIA Jetson AGX Orin",
+   "fact": "12-core Cortex-A78AE; 2× NVDLA v2.0; PVA v2.0; 32 GB 256-bit LPDDR5 at 204.8 GB/s (dev-kit module)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Jetson AGX Orin Series Datasheet",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "DL Accelerator 2x NVDLA v2.0 Vision Accelerator PVA v2.0 Memory 32GB 256-bit LPDDR5 204.8 GB/s",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD Ryzen 7040 ‘Phoenix’ + XDNA",
+   "fact": "Phoenix NPU tile organisation: shim (DDR DMA), memory tile (L2 scratchpad), compute tiles with local L1",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AMD/Xilinx MLIR-AIE (IRON) architecture reference",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Row 0 Shim — DMA between external (DDR) memory and the AIE array; Row 1 Mem — L2 scratchpad shared between Shim and the column's compute tiles; Rows 2..5 Compute — The actual cores running C++ kernels; each has a small L1",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD Ryzen 7040 ‘Phoenix’ + XDNA",
+   "fact": "Phoenix configuration 4×4 compute tiles (NPU1); XDNA descends from Xilinx AI Engine / Hot Chips '23 disclosure",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AMD/Xilinx MLIR-AIE device table; AMD Hot Chips 2023 (Ryzen 7040)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Phoenix / Hawk Point — AIE2 a.k.a. XDNA — 4 × 4 (NPU1)",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Cadence Tensilica HiFi 5",
+   "fact": "Five-slot VLIW; two 128-bit loads/cycle; 8×32×32 or 16×16×16 DSP MACs/cycle",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Cadence press release — Tensilica HiFi 5 DSP (Oct 31, 2018)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Five very long instruction word (VLIW)-slot architecture capable of issuing two 128-bit loads per cycle",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Cadence Tensilica HiFi 5",
+   "fact": "NN processing: 32 16×8 or 16×4 MACs/cycle; 2× audio and 4× NN improvement vs HiFi 4",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Cadence press release — Tensilica HiFi 5 DSP (Oct 31, 2018)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "4X MAC capability versus HiFi 4 DSP for NN processing, includes: 32 16x8 or 16x4 MACs per cycle, with optional 16 half-precision floating-point MACs per cycle",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Texas Instruments C66x / C6678",
+   "fact": "C6678: eight C66x cores; per-core 32 KB L1P, 32 KB L1D, 512 KB L2; 4 MB MSMC shared memory",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "TI KeyStone architecture material (via TI/OpenMP presentations) + TI datasheet data",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Eight C66x cores — Each with 32k L1P, 32k L1D, 512k L2 … 4MB Multicore Shared Memory (MSMC)",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Texas Instruments C66x / C6678",
+   "fact": "C66x core is an 8-way VLIW with 8 functional units in two sides (.M/.D/.L/.S per side)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "TI C66x architecture presentations",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "8-way VLIW processor — 8 functional units in two sides: M: multiplication, D: load/store, L and S: addition and branch",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Texas Instruments C66x / C6678",
+   "fact": "128 SP GFLOPS at 1 GHz / 160 at 1.25 GHz, ~10 W",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Van Zee & van de Geijn et al., Level-3 BLAS on the TI C6678 (citing TI)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "This particular device contains eight C66x cores, provides a combined 128 single precision (SP) GFLOPS … and consumes 10W when the cores are running at 1 GHz.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel IPU E2000 ‘Mount Evans’",
+   "fact": "Up to 16 Arm Neoverse N1 cores at up to 3 GHz in the compute complex",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel, Hot Chips 2021 — Mount Evans IPU presentation",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Up to 16 ARM Neoverse N1 Cores @up to 3GHz for infrastructure apps such as the Storage initiator backend, TLS proxy, vSwitch and other applications.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel IPU E2000 ‘Mount Evans’",
+   "fact": "Network subsystem: 200 Gb/s full duplex for up to 4 hosts; programmable pipeline at 200 Mpps; NVMe interface with inline AES-XTS",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel, Hot Chips 2021 — Mount Evans IPU presentation",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Support for up to 4 host Xeons with 200Gb/s full duplex … Programmable packet pipeline with QoS and telemetry capabilities supporting 200Mpps … NVMe device interface with inline AES-XTS and VM QoS",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD Pensando Elba / DSC",
+   "fact": "P4-programmable pipeline of 144 MPUs + 16× A72 Arm complex; 2× 200 Gb/s line rate",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AMD Pensando Elba DPU Product Brief (April 2024)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "It features a P4-programmable pipeline comprising 144 custom match processing units (MPUs), combined with a 16x A72 Arm® core complex, dedicated data encryption and storage offload engines all tied together via a proprietary fast network-on-a-chip interconnect.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD Pensando Elba / DSC",
+   "fact": "Source-code compatible with first-generation Capri",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AMD Pensando Elba DPU Product Brief (April 2024)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "It is source-code compatible with the 1st generation “Capri” DPU",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Marvell OCTEON 10",
+   "fact": "First DPU family on TSMC 5 nm with Neoverse N2 cores; 8–24 cores up to 2.7 GHz",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Marvell OCTEON 10 DPU Platform Product Brief",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "OCTEON 10 DPU family is built on TSMC's 5nm process and incorporates 64-bit ARM Neoverse N2 cores.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Marvell OCTEON 10",
+   "fact": "Hardware ML engine delivers 100× performance gains over software; VPP accelerators up to 5× packet rate; integrated 1 Terabit switch, true inline crypto",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Marvell OCTEON 10 DPU Platform Product Brief",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Hardware based ML engine delivers 100x performance gains over software processing. VPP based hardware accelerators improve packet processing rate by up to 5x.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "NVIDIA NVLink 4 / NVSwitch",
+   "fact": "Fourth-generation NVLink provides 900 GB/s bidirectional bandwidth per GPU",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Technical Blog — Third-Generation NVSwitch (2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Fourth-generation NVLink provides 900 GB/s of bidirectional bandwidth per GPU—1.5x greater than the prior generation",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "NVIDIA NVLink 4 / NVSwitch",
+   "fact": "Third-gen NVSwitch incorporates SHARP in-network reductions and multicast",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Technical Blog — Third-Generation NVSwitch (2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "It also incorporates hardware acceleration for collective operations with multicast and NVIDIA Scalable Hierarchical Aggregation and Reduction Protocol (SHARP) in-network reductions.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "NVIDIA NVLink 4 / NVSwitch",
+   "fact": "NVLink Switch System connects up to 256 H100 GPUs at 57.6 TB/s all-to-all",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Technical Blog — Third-Generation NVSwitch (2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "NVIDIA NVSwitch is also a critical enabler of the NVLink Switch networking appliance, which enables the creation of clusters with up to 256 connected NVIDIA H100 Tensor Core GPUs and 57.6 TB/s of all-to-all bandwidth.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD Infinity Fabric / Infinity Cache",
+   "fact": "Infinity Cache: 128 MB on-die last-level cache on RDNA 2; up to 2.4× greater bandwidth-per-watt vs GDDR6-only designs",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AMD press release — Radeon RX 6000 Series launch (Oct 28, 2020)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "It also includes new AMD Infinity Cache technology that offers up to 2.4X greater bandwidth-per-watt compared to GDDR6-only AMD RDNA-based architectural designs.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "AMD Infinity Fabric / Infinity Cache",
+   "fact": "MI300X: 256 MB Infinity Cache across its I/O dies; 192 GB HBM3 at 5.3 TB/s",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "AMD Instinct MI300X Data Sheet",
+    "publisher": null,
+    "url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/data-sheets/amd-instinct-mi300x-data-sheet.pdf",
+    "locator": null
+   },
+   "quote": "Eight accelerated compute dies (XCDs) with 38 compute units (CUs), 32 KB of L1 cache per CU, 4 MB shared L2 cache shared across CUs, and 256 MB of AMD Infinity Cache™ shared across 8 XCDs.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Google Titan M2",
+   "fact": "Titan M2 moves to an in-house designed RISC-V processor with extra speed and memory",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Google Security Blog — 'Pixel 6: Setting a new standard for mobile security' (Oct 2021)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "For Titan M2, we moved to an in-house designed RISC-V processor, with extra speed and memory. This makes it even faster, which helps to minimize any latency to things like your fingerprint unlock.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Google Titan M2",
+   "fact": "Titan M2 enforces Android Verified Boot and backs the Android StrongBox Keymaster module",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "NIST CAVP — Google Titan M2 FIPS 140-2 certificate description",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Titan M2 performs several security sensitive functions, including enforcing Android Verified Boot and backing the Android Strongbox Keymaster module.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Microsoft Pluton",
+   "fact": "Pluton builds security directly into the CPU, removing the CPU↔TPM communication channel as an attack surface",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Microsoft Security Blog — 'Meet the Microsoft Pluton processor' (Nov 17, 2020)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Pluton design removes the potential for that communication channel to be attacked by building security directly into the CPU.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Microsoft Pluton",
+   "fact": "Pluton technology pioneered in Xbox and Azure Sphere; firmware updated via Windows Update",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Microsoft Security Blog — 'Meet the Microsoft Pluton processor' (Nov 17, 2020)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Pluton builds on technology first pioneered in Xbox and Azure Sphere",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Tesla FSD Hardware 4 (HW4)",
+   "fact": "Any Tesla-published HW4 datasheet or specification",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "none",
+    "title": "—",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Tesla publishes no HW4 datasheet. All quantitative HW4 claims originate in teardowns and secondary reporting (WikiChip, Electrek, GreenTheOnly) and are marked accordingly."
+  },
+  {
+   "entry": "Tesla FSD Hardware 4 (HW4)",
+   "fact": "GDDR6 memory bandwidth per SoC",
+   "status": "disputed",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "WikiChip (FSD Chip / HW4 coverage) vs Electrek HW4 reporting",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "WikiChip-derived estimates put per-SoC bandwidth near 224 GB/s; Electrek's HW4 coverage implies ~384 GB/s. Unresolved — Tesla confirms neither."
+  },
+  {
+   "entry": "Tesla FSD Hardware 4 (HW4)",
+   "fact": "Three NPUs per SoC, ~121 TOPS class",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "Teardown / secondary reporting (WikiChip, Electrek)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Consistent across teardown coverage but never confirmed by a primary source."
+  },
+  {
+   "entry": "Mobileye EyeQ6",
+   "fact": "EyeQ6 High specialised components: XNN (DNN), VMP (vector), PMA (CGRA dataflow), plus MPC and MIPS CPUs",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Mobileye EyeQ6 technical material (via Mobileye/Intel disclosures)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The EyeQ6 High has five specialized components: two CPUs (MPC and MIPS), XNN (accelerator for deep neural networks), VMP (Vector Microcode Processor), and PMA (Programmable Macro Array)",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Mobileye EyeQ6",
+   "fact": "EyeQ6 High rated 34 TOPS (INT8); VMP is a wide-vector VLIW/SIMD machine; PMA is a CGRA dataflow machine",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Mobileye EyeQ6 technical material",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The EyeQ6 High is rated at 34 TOPS (INT8). … VMP: A wide vector (VLIW and SIMD) machine for general purpose computer vision processing. PMA: A CGRA dataflow machine.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "NVIDIA DRIVE Thor",
+   "fact": "This entry's spec line read “2,000 TOPS (FP8)”",
+   "status": "corrected",
+   "previous_value": "2,000 TOPS (FP8)",
+   "current_value": "2,000 TFLOPS (FP8)",
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA press release — DRIVE Thor unveiling (Sept 20, 2022)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "Delivering 2,000 teraflops of FP8 performance, the NVIDIA DRIVE Thor™ superchip unifies intelligent functions — including automated and assisted driving, parking, driver and occupant monitoring, digital instrument cluster, in-vehicle infotainment (IVI) and rear-seat entertainment — into a single architecture for greater efficiency and lower overall system cost.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "NVIDIA DRIVE Thor",
+   "fact": "GPU generation",
+   "status": "disputed",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA 2022 launch materials vs later production descriptions",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "The 2022 announcement pairs a Hopper-architecture MIG feature and Grace CPU with an Ada Lovelace GPU; later production coverage describes Thor as Blackwell-based (Thor-X). Both are recorded; no primary production datasheet settles it publicly."
+  },
+  {
+   "entry": "Qualcomm Snapdragon Ride Flex",
+   "fact": "First mixed-criticality platform enabling safety-critical and infotainment workloads concurrently on one SoC",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Qualcomm press release — Snapdragon Ride Flex unveiling (Jan 4, 2023)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "We continue to remain at the forefront of automotive compute innovation, and as we enter the era of Software Defined Vehicles, the Snapdragon Ride Flex SoC family defines a new setpoint for high-performance power-optimized mixed-criticality architectures",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Qualcomm Snapdragon Ride Flex",
+   "fact": "Per-SoC TOPS and core counts for Ride Flex SKUs",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "none",
+    "title": "—",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Qualcomm does not publish a per-SKU Ride Flex datasheet; widely repeated single-chip figures trace to platform-level marketing for multi-SoC Ride Vision systems."
+  },
+  {
+   "entry": "Intel Loihi 2",
+   "fact": "Loihi 2: 6 embedded x86 cores + 128 asynchronous neuron cores on a NoC; ~1M neurons per chip",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel Loihi 2 paper (Davies et al., 2021) via review literature",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "The Loihi 2 chip by Intel consists of 6 embedded microprocessor cores (Lakemont x86) and 128 fully asynchronous neuron cores (NCs) connected by a network-on-chip.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "Intel Loihi 2",
+   "fact": "Graded spikes carry up to 32-bit payloads; programmable neuron models via microcode",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Intel Loihi 2 disclosures (Intel Labs / paper)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Both are headline Loihi 2 features in Intel's own materials; quoted here as paraphrase-free summary without quotation marks rather than inventing an exact sentence."
+  },
+  {
+   "entry": "IBM NorthPole",
+   "fact": "NorthPole eliminates off-chip memory, intertwining compute with memory on-chip; appears externally as an active memory chip",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "Modha et al., 'Neural inference at the frontier of energy, space, and time,' Science 382 (2023)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "NorthPole is a neural inference architecture that blurs this boundary by eliminating off-chip memory, intertwining compute with memory on-chip, and appearing externally as an active memory chip.",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "IBM NorthPole",
+   "fact": "22B transistors, 800 mm², 12 nm; 256 cores; 2,048 ops/core/cycle at 8-bit",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "primary",
+    "title": "IBM Research Blog — NorthPole announcement (Oct 2023)",
+    "publisher": null,
+    "url": null,
+    "locator": null
+   },
+   "quote": "With 22 billion transistors in an 800mm2 area, NorthPole has 256 cores and 2048 operations per core per cycle at 8bit precision",
+   "date_checked": "2026-11-22",
+   "notes": null
+  },
+  {
+   "entry": "MediaTek Imagiq 790 (Dimensity 9000)",
+   "fact": "Entry year (was filed under the 2023 Dimensity 9200+)",
+   "status": "corrected",
+   "previous_value": "2023",
+   "current_value": "2021",
+   "source": {
+    "type": "primary",
+    "title": "MediaTek Dimensity 9000 launch / product page",
+    "publisher": "MediaTek",
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Imagiq 790 launched with the Dimensity 9000 in November 2021; the year follows the corrected chip pairing. No verbatim sentence captured for the launch date in this pass."
+  }
+ ],
+ "schema": "silicon-zoo fact records v1 — one record per fact checked under Sai's fact standard (Nov 22, 2026)"
+}
