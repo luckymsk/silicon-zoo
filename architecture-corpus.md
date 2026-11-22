@@ -907,3 +907,367 @@ The final 36 catalogue entries that still carried generic class-pattern breakdow
 **Fact check.**
 - [verified] NorthPole eliminates off-chip memory, intertwining compute with memory on-chip; appears externally as an active memory chip — Source: Modha et al., 'Neural inference at the frontier of energy, space, and time,' Science 382 (2023). Quote: "NorthPole is a neural inference architecture that blurs this boundary by eliminating off-chip memory, intertwining compute with memory on-chip, and appearing externally as an active memory chip."
 - [verified] 22B transistors, 800 mm², 12 nm; 256 cores; 2,048 ops/core/cycle at 8-bit — Source: IBM Research Blog — NorthPole announcement (Oct 2023). Quote: "With 22 billion transistors in an 800mm2 area, NorthPole has 256 cores and 2048 operations per core per cycle at 8bit precision"
+
+---
+
+## Level-2 drill-down — Inside the signature blocks (2026-11-22)
+
+The first Level-2 pass (Sai, Nov 22, 2026: "the drill down, go further if you can") deepens 17 entries: the six Anatomy Lab landmarks first (H100, TPU v4, Firestorm, WSE-2, Tomahawk 5, Scan & ATPG), then eleven further starred landmarks. For each entry's one or two signature blocks: the internal sub-blocks, a stage-by-stage trace of one concrete unit of work, the bottleneck relieved and the bottleneck created, and the governing numbers — every new number checked under the Fact standard, one JSON record per fact in files/fact-records.json (29 new records this pass). Where a vendor publishes no internals (Apple Firestorm, Broadcom buffer capacity, Google Argos core internals), the entry says so plainly instead of inventing sub-blocks. No previously published wiki value was found wrong in this pass, so there are no corrections to report: all 29 records are verified or (for Firestorm's two microbenchmark-derived figures) unverifiable.
+
+### NVIDIA Hopper H100
+
+#### Inside the signature block: Fourth-generation Tensor Core — inside one SM partition
+
+**Inside it.** The H100 SM is four near-identical partitions sharing one 256 KB L1/shared-memory block. Each partition has its own warp scheduler and dispatch unit, a slice of the 256 KB register file, its CUDA-core lanes — and exactly one Tensor Core. The Tensor Core itself is a matrix-multiply-accumulate array with operand collectors that pull the A fragment from registers or shared memory and the B fragment from shared memory, FP multipliers for FP8/FP16/BF16/TF32, and FP32 accumulators that live in registers distributed across the warp's 32 threads. A Tensor Memory Accelerator (TMA) unit per SM moves whole tiles between global memory and shared memory asynchronously, so the partitions never spend issue slots on address arithmetic.
+
+**Trace — one unit of work.**
+1. **Tile staged by TMA.**A weight tile and an activation tile are copied from L2/HBM into shared memory by the TMA in the background, while the previous tile is still computing — the copy is one descriptor instruction, not thousands of loads.
+2. **Warp group issues wgmma.**A cooperating group of warps issues a single warp-group matrix instruction; the four partitions' Tensor Cores each take their slice of the tile.
+3. **The MMA sweep.**Cycle by cycle the array multiplies shared-memory operands into the resident weights' products and accumulates in FP32 — hundreds of MACs retire per clock per SM across the four cores, with no register-file traffic for the B operand.
+4. **Accumulators stay put.**The output fragment remains in registers, where the CUDA cores apply bias and activation in the epilogue.
+5. **TMA stores the result.**The finished tile is written back to global memory by the TMA while the next wgmma is already running — compute and data movement are fully overlapped.
+
+**Bottleneck in / out.** Relieves the operand-delivery wall: a scalar FMA machine spends most of its energy fetching operands, while here one instruction retires a tile multiply fed straight from shared memory. Creates a staging wall instead — peak rate demands large tiles resident on-chip, so small or skinny matrices, and kernels that cannot keep 228 KB of shared memory busy, fall far off peak; FP64 tensor rate is a small fraction of the FP8 rate.
+
+**Governing numbers.** 4 Tensor Cores per SM (one per partition); 256 KB register file per SM; combined L1 + shared memory 256 KB per SM, shared memory configurable up to 228 KB; 132 SMs on the H100 SXM part.
+
+**Primary source.** NVIDIA, NVIDIA Hopper GPU Architecture whitepaper (2022) and NVIDIA Technical Blog, 'NVIDIA Hopper Architecture In-Depth'.
+
+#### Inside the signature block: Transformer Engine — the rescaling wrapped around the Tensor Core
+
+**Inside it.** The Transformer Engine is not a separate compute block; it is scaling and conversion logic wrapped around the Tensor Core datapath, driven by software. Per tensor, the software stack (the Transformer Engine library with cuDNN) tracks the maximum absolute value ('amax') history, picks a scaling factor, and the hardware applies that scale as values are converted into FP8 (E4M3 or E5M2) on the way into the Tensor Cores and rescales the FP32 accumulators on the way out. The special piece is that range management happens in the datapath, per layer, at full speed.
+
+**Trace — one unit of work.**
+1. **Amax history read.**Before a transformer layer runs, the library consults the tensor's recent amax history and fixes this layer's FP8 scaling factor.
+2. **Activations quantized in flight.**FP16/BF16 activations are scaled and cast to FP8 E4M3 as they stream toward shared memory — small gradients and large activations both land inside FP8's narrow range.
+3. **Tensor Core multiplies FP8.**The MMA runs FP8 × FP8 with FP32 accumulation at twice the FP16/BF16 rate.
+4. **Output rescaled.**Accumulators are multiplied by the inverse scale and written back in BF16/FP16, so the next layer sees full-range values.
+5. **Gradient path uses E5M2.**Backward-pass tensors typically take the E5M2 flavour — more exponent range, less mantissa — chosen per tensor by the same machinery.
+
+**Bottleneck in / out.** Relieves FP8's dynamic-range wall, which had made raw FP8 training diverge: per-tensor scaling makes 8-bit training numerics safe without a software emulation tax. Creates a bookkeeping dependency — every tensor carries amax state and a scale decision, layers with outlier channels still lose precision and get pushed back to BF16, and the win exists only inside the library/framework path that manages the scales.
+
+**Governing numbers.** FP8 gives 2× the throughput and half the footprint of FP16/BF16 in the Tensor Core (NVIDIA whitepaper figure); two FP8 flavours, E4M3 (4 exponent / 3 mantissa bits) and E5M2 (5 / 2); scaling granularity is per tensor, applied per layer.
+
+**Primary source.** NVIDIA, NVIDIA Hopper GPU Architecture whitepaper (2022), FP8 / Transformer Engine sections.
+
+### Google TPU v4
+
+#### Inside the signature block: MXU — the 128×128 systolic array inside a TensorCore
+
+**Inside it.** Each TPU v4 chip holds two TensorCores; each TensorCore holds four MXUs, a vector unit (VPU) and shares the scalar control that sequences the XLA-compiled schedule. An MXU is a 128×128 grid of multiply-accumulate cells — 16,384 MACs per MXU, 131,072 per chip. Weights are loaded into the cells and stay stationary; activations enter from one edge and ripple cell to cell; partial sums accumulate as the data moves, so a weight fetched once is used 128 times. Operands stage through the 16 MiB per-TensorCore Vector Memory (VMEM); the two TensorCores share 128 MiB of Common Memory (CMEM).
+
+**Trace — one unit of work.**
+1. **Weight tile loaded.**The compiled schedule DMA-loads a 128×128 BF16 weight tile from HBM into VMEM, then into the array's cells, where it sits for the whole tile's lifetime.
+2. **Activations enter.**A 128-wide activation vector steps into the array's edge, one new vector per cycle, each element skewed so it meets the right cell at the right cycle.
+3. **The systolic sweep.**Each cell multiplies the passing activation by its resident weight and adds the product to the partial sum arriving from its neighbour — the arithmetic happens in the wires, not in a register file.
+4. **Results drain.**After the fill latency, one completed 128-wide dot product emerges per cycle into FP32 accumulators in VMEM.
+5. **VPU finishes the layer.**Bias, activation and normalisation run on the VPU's 128 lanes while the MXU is already sweeping the next tile — dense and elementwise work overlap by construction.
+
+**Bottleneck in / out.** Relieves operand-fetch energy and bandwidth: the systolic flow gives each weight 128 uses per fetch, which is why a TPU beats a register-file machine on joules per MAC. Creates shape rigidity — work must tile to 128×128, so small or skinny layers pad with zeros and waste the array, and the entire chip executes a static compiler schedule with no dynamic escape hatch.
+
+**Governing numbers.** 2 TensorCores per chip × 4 MXUs of 128×128; VPU 128 lanes × 16 ALUs per TensorCore; VMEM 16 MiB per TensorCore; CMEM 128 MiB shared; 1,050 MHz clock (ISCA 2023 paper, §2 and Table 4).
+
+**Primary source.** Jouppi et al., 'TPU v4: An Optically Reconfigurable Supercomputer for Machine Learning with Hardware Support for Embeddings', ISCA 2023.
+
+#### Inside the signature block: SparseCore — the dataflow engine for embeddings
+
+**Inside it.** Beside the TensorCores sit the SparseCores: small dataflow processors whose whole job is the irregular half of recommendation models — embedding lookups. Where the MXU wants dense tiles, a SparseCore issues many independent gathers into HBM and reduces the returned embedding vectors in a streaming dataflow, never touching the systolic arrays. Google's ISCA paper discloses the SparseCore's role, cost and effect; it does not publish a gate-level block diagram, and this entry does not invent one.
+
+**Trace — one unit of work.**
+1. **Indices arrive.**For one DLRM feature, a list of embedding indices reaches the SparseCore from the TensorCore side of the chip.
+2. **Gather fans out.**The SparseCore turns the indices into many parallel, uncoalesced HBM reads — exactly the access pattern that would stall an MXU pipeline.
+3. **Vectors stream back and reduce.**Returned embedding rows flow through the reduction datapath and are summed/averaged into a single pooled vector as they arrive.
+4. **Dense side resumes.**The pooled vector crosses to a TensorCore and joins the bottom-MLP computation on the MXUs.
+5. **Across the pod.**Because embedding tables are sharded over many chips, the gather usually triggers an all-to-all exchange over the ICI torus — the traffic pattern the paper's twisted-torus OCS topologies exist to serve.
+
+**Bottleneck in / out.** Relieves the dense engines from latency-bound gather/scatter work that runs at memory latency, not FLOPS — embeddings stop throttling the matmul arrays. Creates a communication bottleneck instead: sharded embeddings turn every lookup into pod-wide all-to-all traffic, which strains torus bisection bandwidth far more than all-reduce ever did.
+
+**Governing numbers.** Embeddings accelerated 5×–7× for about 5% of die area and power (ISCA 2023 abstract). Per-SparseCore queue depths and internal buffer sizes are not published.
+
+**Primary source.** Jouppi et al., ISCA 2023 (abstract and §3).
+
+### Apple Firestorm — M1
+
+#### Inside the signature block: The wide front end and the ~630-entry reorder buffer — as far as anyone outside Apple can see
+
+**Inside it.** Apple publishes no block diagram, pipeline depth, queue size or latency for Firestorm — the company 'doesn't disclose any details' (AnandTech), so there are no Apple internals to decompose. Everything known comes from microbenchmark reverse-engineering, chiefly AnandTech's A14/M1 deep dive: an 8-wide decode block, a reorder buffer measured at roughly 630 entries, an estimated ~354 integer and ~384 floating-point rename registers, at least seven integer execution ports, four 128-bit NEON pipelines, and load/store queues measured at roughly 148–154 outstanding loads and ~106 outstanding stores. Treat every number here as a measurement, not a specification.
+
+**Trace — one unit of work.**
+1. **Fetch from a huge L1I.**Instructions come from a 192 KB L1 instruction cache (a size Apple confirmed indirectly via Darwin kernel sources, per AnandTech) — six times a contemporary Intel core's — so fetch rarely waits.
+2. **Decode eight at once.**Up to eight fixed-length ARM64 instructions decode per cycle, twice the width of contemporary x86 decoders, which must first find instruction boundaries.
+3. **Rename into a deep window.**Instructions are renamed into the ~630-entry reorder buffer — the deepest out-of-order window measured in any commercial core of its era.
+4. **Wait, then fire.**An instruction can sit in that window across multiple cache misses while hundreds of later instructions execute around the stall.
+5. **Retire in order.**Results commit in program order; the window's depth is invisible to software except as sustained IPC on ordinary, unmodified code.
+
+**Bottleneck in / out.** Relieves the instruction-level-parallelism wall: width plus window depth extract parallelism from serial code without compiler heroics, which is the core of Firestorm's performance per clock. Creates a verification and power problem — wakeup/select logic grows superlinearly with window size — and an information problem for everyone else: with no published internals, the mechanisms behind the measurements (predictor structure, queue partitioning) remain inference, marked unverifiable in the fact check.
+
+**Governing numbers.** 8-wide decode; ROB ~630 entries; L1I 192 KB, L1D 128 KB; ~148–154 outstanding loads measured. All figures are AnandTech microbenchmark estimates — Apple has published none of them.
+
+**Primary source.** No primary source exists. Secondary: AnandTech, 'Apple Silicon M1 / A14 Deep Dive' (2020), microbenchmark-based.
+
+### Cerebras WSE-2
+
+#### Inside the signature block: The dataflow core — 48 KB of SRAM with a processor attached
+
+**Inside it.** Half of each tiny core (~38,000 µm²) is memory: 48 KB of local SRAM organized as eight single-ported banks, each 32 bits wide, holding both the core's instructions and its data — there is no cache, no shared memory and no coherence anywhere on the wafer. A small 256-byte software-managed cache holds hot structures such as accumulators. The logic half is a dataflow execution unit whose operations fire when their input data arrives, plus a router with ports to the four mesh neighbours and to the core itself; packets carry a 'color' that identifies their role, so arrival of the right color is what triggers the waiting computation.
+
+**Trace — one unit of work.**
+1. **A wavelet arrives.**A 32-bit data packet ('wavelet') enters the core's router from a neighbour, tagged with a color naming the operation it belongs to.
+2. **Arrival is the trigger.**The color match wakes the instruction block waiting on that data in local SRAM — dataflow firing; the core never polls or spins.
+3. **Multiply against a resident weight.**The core reads its weight from an SRAM bank — one cycle away, always — multiplies, and accumulates into the software-managed cache.
+4. **Result leaves immediately.**The partial sum is emitted onto the fabric toward the next core in the wafer-wide choreography the compiler laid out.
+5. **Zeros cost nothing.**If the arriving activation is zero, the dataflow simply doesn't fire downstream work — unstructured sparsity is skipped by construction, not by a sparsity engine bolted on.
+
+**Bottleneck in / out.** Relieves the memory wall outright: weights live in SRAM one cycle from the ALUs, so the HBM-bandwidth bottleneck that governs GPU training disappears, and 850,000 cores give an aggregate SRAM bandwidth no packaged chip can approach. Creates a capacity wall — 48 KB per core, 40 GB per wafer is all the fast memory there is; models that outgrow it must stream weights from external MemoryX, reintroducing an off-wafer feed, and utilization rests entirely on the compiler's placement across the mesh.
+
+**Governing numbers.** 850,000 cores; 48 KB SRAM per core in 8 single-ported 32-bit banks; 256-byte software-managed cache per core; 40 GB total on-wafer SRAM; ~1.1 GHz core clock and ~30 mW peak per core (Cerebras' Hot Chips 34 deep dive).
+
+**Primary source.** Lie, 'Cerebras Architecture Deep Dive', Hot Chips 34 / IEEE Micro 43(3), 2023; Cerebras architecture deep-dive (vendor).
+
+### Broadcom Tomahawk 5 (BCM78900)
+
+#### Inside the signature block: The shared packet buffer — and the Cognitive Routing wrapped around it
+
+**Inside it.** Broadcom publishes Tomahawk 5's architecture and features, not its floorplan: 512 lanes of 100G PAM4 SerDes feed a single-pass pipeline (parse → lookup → buffer → schedule → rewrite) built around one packet buffer pooled across all 64 ports, a traffic manager/scheduler, telemetry engines, and the Cognitive Routing block that watches link utilization locally and downstream. The buffer's capacity in megabytes, its cell size and its queue depths are not published — Broadcom discloses the shared-buffer architecture and its latency claims only, so this section goes no deeper than Broadcom does.
+
+**Trace — one unit of work.**
+1. **Packet lands and is classified.**A packet arrives on a group of 100G PAM4 lanes making one 800G port; the parser classifies it and a single-pass lookup resolves egress, including VxLAN bridging/routing where configured.
+2. **Cells enter the shared pool.**The packet is written into the one shared buffer — there is no per-port partition, so any egress may borrow memory that idle ports are not using.
+3. **Cognitive Routing inspects the flow.**For the packet's flow, the routing block compares utilization on the hashed path against alternatives, including downstream state; a congested hash choice gets its flowlet steered to a lighter link.
+4. **Scheduler drains at line rate.**The traffic manager arbitrates the port's queues and emits the packet; per-port fairness is enforced by admission thresholds on the shared pool, not by static partitions.
+5. **Telemetry stamps the exit.**In-band telemetry records the packet's residence time and queue state as it leaves — the tail-latency evidence the architecture is sold on.
+
+**Bottleneck in / out.** Relieves incast tail latency: partitioned buffers drop packets when one port microbursts while the rest of the pool sits idle; pooling removes that artificial wall, which is why Broadcom markets the part on RoCEv2 job completion time. Creates a fairness problem in exchange — one abusive flow can occupy the shared pool, so dynamic admission thresholds become the critical control logic — and a monolithic 51.2 Tbps single-pass pipeline leaves no modularity: every feature must fit the one pass.
+
+**Governing numbers.** 51.2 Tbps aggregate switching capacity; 64 × 800GbE ports; 512 × 100G PAM4 SerDes lanes. Buffer capacity, cell size and queue depths: not published by Broadcom.
+
+**Primary source.** Broadcom, 'Broadcom Ships Tomahawk 5' launch release (GlobeNewswire, 16 Aug 2022).
+
+### Scan Design & ATPG Architecture
+
+#### Inside the signature block: The scan chain — and the ATPG loop that drives it
+
+**Inside it.** The signature block is a pair, one on-chip and one in software. On-chip: the mux-D scan flip-flop, which selects between functional data and scan data, strung by the thousand into shift chains that thread the whole design; around the chains sit test clock and power control, and in production parts an EDT decompressor/compactor pair that fans a handful of tester channels into hundreds of internal chains and compresses the responses back. In software: the ATPG engine, which treats the chains as making every flip-flop directly controllable and observable, and solves for input patterns that excite a chosen fault and propagate its effect to a scan cell.
+
+**Trace — one unit of work.**
+1. **ATPG targets one fault.**The engine picks a fault — say a net stuck-at-1 — justifies the opposite value at that net through the logic, and propagates the resulting difference forward to an observable scan cell, producing one test vector.
+2. **Shift-in.**The chip enters test mode and the vector shifts serially into the scan chains, one bit per shift clock, until the chains hold exactly the state ATPG specified.
+3. **Capture.**One functional capture pulse runs the real logic — at speed for transition-fault patterns, slowly for stuck-at — and the response is captured back into the scan cells.
+4. **Shift-out and compare.**The response shifts out (overlapped with the next vector shifting in) and is compared against the simulated good-machine response.
+5. **Mismatch localizes.**A differing bit names the failing chain and, through ATPG's fault dictionary, the small set of physical nets that could explain it — diagnosis, not just pass/fail.
+
+**Bottleneck in / out.** Relieves the observability wall: without scan, internal nodes are unreachable from the pins and stuck-at coverage collapses to whatever functional patterns happen to excite. Creates test-data volume — chains are serial, so pattern count × chain length sets tester time and cost; that pressure is precisely what EDT compression (typically an order of magnitude or more) and hierarchical test exist to relieve, at the price of X-states that must be masked in the compactor and a small aliasing risk.
+
+**Governing numbers.** Governing numbers are per-design, not per-architecture: chain count and length, pattern count, and the coverage sign-off (stuck-at coverage in the high ninety percents is the usual production bar). Lineage anchor: LSSD — the level-sensitive scan discipline this all descends from — is Eichelberger & Williams, DAC 1977.
+
+**Primary source.** Eichelberger & Williams, 'A Logic Design Structure for LSI Testability', DAC 1977; IEEE Std 1149.1/1500 test-access standards.
+
+### DEC Alpha 21264 (EV6)
+
+#### Inside the signature block: The tournament branch predictor
+
+**Inside it.** Three tables and a referee, all read in the fetch cycle. Local path: a 1,024-entry local history table holding 10 bits of outcome history per branch (indexed by branch address), feeding a 1,024-entry table of 3-bit saturating counters — this path learns a branch's own rhythm, such as alternating taken/not-taken. Global path: a 4,096-entry table of 2-bit counters indexed by the 12-bit history of the last twelve branches taken anywhere — this path learns correlations between branches. Choice path: a second 4,096-entry 2-bit table, also indexed by global history, that learns which of the two predictors to believe in each global context.
+
+**Trace — one unit of work.**
+1. **Fetch presents a branch PC.**The local history table returns this branch's last-10-outcomes pattern.
+2. **Local prediction forms.**The 10-bit pattern indexes the local counter table; the counter's most significant bit is the local prediction.
+3. **Global and choice read in parallel.**The 12-bit global history indexes both the global counter table (the global prediction) and the choice table (which predictor has been right in contexts like this one).
+4. **The chooser arbitrates.**If local and global agree, that is the prediction; if they disagree, the choice counter's MSB picks the winner and fetch steers down that path.
+5. **Retirement trains all three.**When the branch retires, the true outcome shifts into both histories and adjusts the counters — the choice counter is updated only when the two predictors disagreed, incrementing toward whichever was right.
+
+**Bottleneck in / out.** Relieves the misprediction wall of a 4-wide machine that speculates through up to ~20 in-flight branches: neither history style wins everywhere, so learning which to trust beats enlarging either table. Creates a fetch-latency and aliasing problem — three SRAM reads plus arbitration must fit inside the fetch cycle at 600 MHz, and 1,024 local-history entries mean unrelated branches share state and pollute each other's patterns.
+
+**Governing numbers.** Local history 1,024 × 10 bits; local counters 1,024 × 3 bits; global and choice tables 4,096 × 2 bits each; global history 12 branches; Kessler reports 90–100% prediction accuracy on most simulated applications/benchmarks.
+
+**Primary source.** Kessler, McLellan & Webb, 'The Alpha 21264 Microprocessor Architecture', ICCD 1998; Kessler, 'The Alpha 21264 Microprocessor', IEEE Micro, Mar–Apr 1999.
+
+### Intel Pentium Pro (P6)
+
+#### Inside the signature block: Reorder buffer + reservation station — the pool of pending µops
+
+**Inside it.** P6's out-of-order heart is three structures working as one. The 40-entry reorder buffer (ROB) holds every in-flight µop in program order and doubles as the rename register file — each ROB entry is the physical destination of one µop. The register alias table (RAT) maps the eight architectural integer registers (and FP/flags state) onto ROB entries, so renaming is just 'point this name at that entry'. Ahead of the five execution ports sits a unified 20-entry reservation station (RS): renamed µops wait there with their operand tags, watch for results, and dispatch to a port the cycle their operands land.
+
+**Trace — one unit of work.**
+1. **Fetch and length-decode.**The fetch unit pulls 16 bytes from the 8 KB instruction cache; because x86 instructions run 1–15 bytes, the first decode stages exist just to find the boundaries.
+2. **Crack into µops.**Three decoders translate the instruction — a load-and-add becomes a load µop plus an add µop; anything longer goes to the microcode sequencer.
+3. **Rename and allocate.**The RAT points the destination register at a fresh ROB entry; both µops take seats in the reservation station carrying tags, not values, for operands still in flight.
+4. **Dataflow execution.**The load µop dispatches as soon as its address operands are ready; the add waits in the RS until the load's ROB entry broadcasts its result, then fires out of order.
+5. **Retire in order.**When both µops reach the ROB head complete, they retire — up to three per cycle — copying results to the architectural register file and making all the speculation invisible.
+
+**Bottleneck in / out.** Relieves the in-order stall: a cache miss no longer freezes the machine — independent µops flow around it, which is why P6 beat the in-order Pentium decisively on real code at similar clock rates. Creates a hard window ceiling: 40 ROB entries and 20 RS entries bound how much latency can be hidden, and when the RS fills with µops queued behind one miss, the wide front end stalls anyway — the direct motivation for the far larger windows in every successor.
+
+**Governing numbers.** ROB 40 entries; reservation station 20 entries; branch target buffer 512 entries; up to 3 µops retired per cycle; five dispatch ports (integer ×2 class, FP, load, store).
+
+**Primary source.** Papworth, 'Tuning the Pentium Pro Microarchitecture', IEEE Micro, Apr 1996; Colwell et al., ISSCC 1995; Bhandarkar & Ding, HPCA 1997.
+
+### NVIDIA Volta V100
+
+#### Inside the signature block: The first Tensor Core — a 4×4×4 matrix engine
+
+**Inside it.** Each Volta SM is split into four processing blocks; each block carries 16 FP32 cores, 8 FP64 cores, 16 INT32 cores, its own warp scheduler and register-file slice — and two Tensor Cores, eight per SM. A Tensor Core is a fixed-function array hard-wired for a single operation, D = A × B + C on 4×4 matrices: A and B enter as FP16, products are formed in full precision, and accumulation is FP32 (or FP16). There is no smaller mode and no scalar mode; the warp's 32 threads collectively own the operand fragments in their registers and issue the operation together through the WMMA interface.
+
+**Trace — one unit of work.**
+1. **Fragments distributed.**A warp loads 16×16 tiles of A and B; each of the 32 threads holds the specific elements the fragment layout assigns it in its registers.
+2. **One WMMA instruction.**The warp issues a single matrix instruction; the SM decomposes it into 4×4×4 primitives across its Tensor Cores.
+3. **64 FMAs per core per clock.**Each Tensor Core retires one 4×4×4 multiply-accumulate per clock — 64 mixed-precision FMAs — with FP16 inputs and FP32 accumulation.
+4. **Accumulator fragment returns.**The D fragment lands back in the warp's registers, laid out for the next WMMA or for the CUDA cores to apply an activation.
+5. **Scale-out arithmetic.**Eight cores per SM × 80 SMs = 640 Tensor Cores; at boost clock that is the V100's 125 TFLOPS mixed-precision peak.
+
+**Bottleneck in / out.** Relieves the instruction-issue wall: one instruction now performs 64 FMAs, lifting matrix throughput to 12× the previous generation's FP32 rate per NVIDIA — deep learning stopped being bound by scalar issue bandwidth. Creates a precision-and-shape contract: the rate exists only for dense FP16 matrix math tiled to the warp fragment geometry; everything else — irregular, scalar, FP64-heavy work — falls back to the CUDA cores at a small fraction of peak.
+
+**Governing numbers.** 640 Tensor Cores (8 per SM × 80 SMs); 64 FMA per Tensor Core per clock; 1,024 floating-point operations per clock per SM from Tensor Cores; 125 TFLOPS peak mixed precision.
+
+**Primary source.** NVIDIA, 'Programming Tensor Cores in CUDA 9' (developer blog, 2017) and the Volta V100 architecture whitepaper.
+
+### NVIDIA Ampere A100
+
+#### Inside the signature block: MIG — partitioning hardware that cuts the whole GPU, not just the SMs
+
+**Inside it.** Multi-Instance GPU is a partitioning layer sliced through every shared resource at once. Compute: the 108 SMs are grouped into instances. Memory: each instance receives dedicated partitions of the 40 MB L2 cache, of the memory controllers and of HBM bandwidth, fenced by hardware isolation so no instance's traffic can evict or starve another's. A single A100 divides into as many as seven GPU instances, in fixed profiles; each instance presents to software as a small, complete GPU with its own command streams and fault domain. The totality — compute, cache and bandwidth partitioned together — is what makes the performance guarantee sellable.
+
+**Trace — one unit of work.**
+1. **Instance created.**The CSP selects a profile; the partitioning hardware fences off an SM group, its L2 partition and its memory-controller share before any tenant code runs.
+2. **Tenant kernel arrives.**The instance's own scheduler dispatches the kernel onto its SM slice only — it cannot see, preempt or be preempted by neighbouring instances.
+3. **Memory stays home.**The kernel's traffic hits its own L2 partition; a neighbour's training job streaming gigabytes cannot evict this instance's working set or consume its DRAM bandwidth.
+4. **Predictable, smaller throughput.**The kernel runs slower than a full A100 would run it — and at a rate the CSP can print in a price list, because the isolation is in the memory system, not in a software quota.
+5. **Teardown.**Destroying the instance returns all three resource slices to the pool together; repartitioning happens between jobs, never mid-kernel.
+
+**Bottleneck in / out.** Relieves GPU under-utilization: most inference and development jobs cannot fill 108 SMs, so a monolithic GPU idled or time-shared badly; MIG turns one big GPU into up to seven right-sized ones. Creates fragmentation and rigidity — slice sizes come from fixed profiles, an instance cannot burst into a neighbour's idle capacity, and carving must happen across compute, cache and bandwidth simultaneously, so the least divisible resource sets the granularity.
+
+**Governing numbers.** Up to 7 instances per A100; 40 MB L2 partitioned among instances; SM shared memory configurable up to 164 KB (Ampere column of NVIDIA's own comparison table); NVIDIA claims up to 7× more GPU instances per server for CSPs.
+
+**Primary source.** NVIDIA, 'NVIDIA Ampere Architecture In-Depth' (developer blog / GA100 whitepaper, 2020).
+
+### AMD CDNA 3 — MI300X
+
+#### Inside the signature block: Infinity Cache — the 256 MB last level living in the I/O dies
+
+**Inside it.** MI300X inverts the usual stack-up: four I/O dies (IODs) form the package base, eight compute dies (XCDs) stack on top of them, and the IODs hold the memory system — the HBM3 controllers for eight stacks and 256 MB of Infinity Cache, the GPU's last-level cache. Each XCD is itself a small GPU: 40 compute units (38 enabled) around a 4 MB L2, with 64 KiB of local data share per CU. Because every XCD-to-HBM access funnels down through the IODs, the Infinity Cache sees the whole GPU's traffic — one 256 MB residency pool shared by 304 CUs instead of eight private caches that would duplicate the same weights eight times.
+
+**Trace — one unit of work.**
+1. **A CU load misses locally.**A wavefront on XCD 3 loads a weight line; it misses the CU's 32 KB L1 and the XCD's 4 MB L2.
+2. **Down into the IOD.**The request crosses the XCD/IOD interface on the package's Infinity Fabric into the I/O die beneath.
+3. **Infinity Cache lookup.**On a hit — the common case when 304 CUs are all streaming the same model weights — the line returns at on-package latency and HBM never sees the request.
+4. **Miss path to HBM3.**On a miss, the IOD's controller issues the read across the 8,192-bit aggregate HBM3 interface (192 GB at 5.3 TB/s) and fills the cache line for the next CU that asks.
+5. **Writeback stays coherent.**The IOD layer is also where the package's coherence and the seven external Infinity Fabric links (128 GB/s each) meet the memory system — one meeting point for on-package and off-package traffic.
+
+**Bottleneck in / out.** Relieves HBM bandwidth pressure: 5.3 TB/s is vast until 304 CUs stream a 70B model's weights every token; a large shared last-level cache converts repeat reads into on-package hits and raises effective bandwidth well past the HBM figure. Creates a funnel — all memory traffic converges on four IODs, so XCD↔IOD fabric bandwidth and cache behaviour once the working set exceeds 256 MB become the new ceiling, and the cache's die area is spent on IOD silicon that computes nothing.
+
+**Governing numbers.** 256 MB Infinity Cache (AMD datasheet); 8 XCDs × 40 CUs (38 active) = 304 CUs; 4 MB L2 per XCD; 64 KiB LDS per CU; 192 GB HBM3 at 5.3 TB/s over an 8,192-bit interface.
+
+**Primary source.** AMD, 'AMD Instinct MI300X Accelerator' data sheet; AMD ROCm documentation, MI300 series architecture tables; Smith, Hot Chips 2024.
+
+### Fujitsu A64FX
+
+#### Inside the signature block: The Core Memory Group — a NUMA node as the unit of design
+
+**Inside it.** The A64FX die is four identical Core Memory Groups (CMGs) joined by a ring network-on-chip with directory-based coherence. Each CMG is a complete, self-contained NUMA node: 12 compute cores plus 1 assistant core that absorbs OS and daemon work, a crossbar from the cores into a shared 8 MiB 16-way L2, its own memory controller, and its own 8 GiB HBM2 stack delivering 256 GB/s. Each core carries two 512-bit SVE pipelines. The design intent is explicit: bind a thread and its data inside one CMG and the ring — the only shared, contended resource — stays out of the critical path.
+
+**Trace — one unit of work.**
+1. **SVE FMA stream issues.**A compute core's two 512-bit SVE pipes fire fused multiply-adds — up to 32 double-precision results per cycle from one core when both pipes are fed.
+2. **L1 feeds the pipes.**Operands stream from the core's 64 KiB L1 data cache, whose gather mechanism can pull strided array elements directly toward the vector registers.
+3. **L2 inside the CMG.**L1 misses cross the CMG crossbar into the shared 8 MiB L2 — still on-node, still uncontended by the other 39 cores' traffic.
+4. **HBM2 inside the CMG.**L2 misses are served by the CMG's own HBM2 stack at 256 GB/s; no ring traversal, no foreign memory controller.
+5. **Only sharing crosses the ring.**A genuinely shared line is the exception that pays NUMA latency across the ring — the programming model's whole job is keeping that case rare.
+
+**Bottleneck in / out.** Relieves the bytes-per-FLOP wall that starves wide SIMD on DDR machines: ~1 TB/s of HBM2 for 48 cores (a bytes/DP-FLOP ratio around 0.37) is why Fugaku's cores stay fed on real HPC codes. Creates a placement burden — performance now depends on binding threads and data to the same CMG; careless placement silently pays ring latency and a fraction of the bandwidth, so the architecture exports its central problem to the runtime and the programmer.
+
+**Governing numbers.** 4 CMGs; 12 compute + 1 assistant core per CMG; 8 MiB 16-way L2 per CMG; 8 GiB HBM2 per CMG at 256 GB/s; 1,024 GB/s aggregate per chip; 512-bit SVE × 2 pipelines per core.
+
+**Primary source.** Fujitsu, A64FX disclosures at Hot Chips 2018 / Supercomputing materials; architecture as described in the published A64FX literature.
+
+### Google Argos VCU
+
+#### Inside the signature block: The encoder core — one 2160p stream per core, ten cores per die
+
+**Inside it.** An Argos die is ten identical encoder cores plus deliberately boring surroundings — Google's ASPLOS paper notes that everything else on the die is off-the-shelf IP (host interface, memory controllers for the LPDDR banks). Each core is a self-contained hardware encoder for VP9 and H.264-class workloads: a prediction/motion-search front end working against up to three reference frames, transform and quantization, an in-loop reconstruction path so the core's reference frames match a decoder's exactly, and a boolean arithmetic entropy coder emitting the final bitstream, with per-core SRAM and frame staging buffering the work. Google does not publish the core's internal stage latencies, queue depths or buffer sizes — the disclosure stops at core count and per-core rate, and so does this section.
+
+**Trace — one unit of work.**
+1. **One rung assigned.**YouTube's scheduler gives this core one output rendition — say the 2160p VP9 rung of a ladder of a dozen-plus versions of the same upload.
+2. **Frame staged.**The 2160p frame lands in the core's staging memory from LPDDR; the core now works independently of the other nine.
+3. **Prediction and mode decision.**Block by block, the core searches motion against up to three reference frames and chooses intra or inter prediction per block.
+4. **Transform, quantize, reconstruct.**Residuals are transformed and quantized; the reconstruction loop rebuilds the decoded frame locally so future predictions reference exactly what viewers' decoders will see.
+5. **Entropy-coded bitstream out.**The boolean arithmetic coder emits the compressed rung, which joins the other renditions produced in parallel by sibling cores and sibling cards.
+
+**Bottleneck in / out.** Relieves CPU transcoding economics: warehouse-scale software encoding on general-purpose servers was the cost centre, and ten fixed-function cores per die are Google's answer — it reports 20–33× better compute efficiency at system level than its previous optimized server fleet. Creates codec rigidity: a VP9-era fixed-function core cannot become an AV1 core by firmware, so the follow-on VCU generation had to add AV1 in new silicon — the standing tax on all fixed-function media design.
+
+**Governing numbers.** 10 encoder cores per die; 2 dies per accelerator card; each core encodes 2160p in real time at up to 60 fps using three reference frames (Google, ASPLOS 2021). Internal buffer sizes and stage latencies: not published.
+
+**Primary source.** Ranganathan et al., 'Warehouse-Scale Video Acceleration: Co-Design and Deployment in the Wild', ASPLOS 2021; Google/YouTube VCU disclosure (2021).
+
+### Apple Secure Enclave
+
+#### Inside the signature block: Memory Protection Engine + the UID-bound AES path
+
+**Inside it.** Apple's Platform Security guide names the enclave's internals — unusually, for Apple. A dedicated Secure Enclave Processor (SEP) runs sepOS (an Apple-customized L4 microkernel) at a deliberately lower clock to blunt clock/power side channels. It boots from its own immutable Boot ROM, has its own AES engine and true random number generator, and — from A11/S4 onward — a Memory Protection Engine with encrypted, anti-replay-protected memory. The SEP owns no private RAM: it works in a dedicated region of the device's ordinary DRAM, and the Memory Protection Engine encrypts every block it writes there (AES in XEX mode) with a CMAC authentication tag stored alongside. The fused, per-device UID key exists only inside the AES engine's hardware key path — software, including sepOS itself, can ask for operations with it but can never read it.
+
+**Trace — one unit of work.**
+1. **Mailbox request.**The application processor asks the enclave to verify a passcode attempt. The only channel is a hardware mailbox — no memory is ever shared or mapped between the two processors.
+2. **Key derivation under the UID.**sepOS feeds the attempt into a key-derivation path keyed by the UID inside the AES engine; because the UID never leaves the enclave, the derived key cannot be computed on any other machine — offline brute force is architecturally impossible.
+3. **Attempt counter enforced.**The anti-replay-protected attempt counter (held in secure storage) is checked and incremented, imposing escalating delays — the enclave is a rate-limited oracle by design.
+4. **Memory traffic stays encrypted.**Throughout, every sepOS read/write to DRAM passes the Memory Protection Engine: blocks are decrypted and CMAC-verified on the way in, re-encrypted on the way out, under an ephemeral per-boot key.
+5. **Verdict only.**On success, sepOS unwraps the data-protection class keys and releases them to the storage subsystem; on failure, the only thing that crosses the mailbox is 'no'.
+
+**Bottleneck in / out.** Relieves the 'kernel compromise equals key compromise' failure: a fully owned application-processor OS finds only wrapped keys and a slow oracle, which is what makes a 4–6 digit passcode a meaningful secret at all. Creates a deliberate bottleneck — all unlock and key operations serialize through one small, slow-clocked core and a narrow mailbox, and the UID's absolute secrecy means enclave state loss is device data loss; availability was traded away for confidentiality, on purpose.
+
+**Governing numbers.** Apple publishes mechanisms, not dimensions: no SEP clock, cache or queue sizes are disclosed. Published anchors: MPE encrypts with AES in XEX mode plus a per-block CMAC tag; anti-replay from A11/S4; two ephemeral memory-protection keys from A14/M1.
+
+**Primary source.** Apple, 'The Secure Enclave', Apple Platform Security guide (support.apple.com).
+
+### SK hynix HBM3 / HBM3E
+
+#### Inside the signature block: Inside the stack — channels, TSVs and the base die
+
+**Inside it.** An HBM3 stack is 8–12 thinned DRAM dies (about 30 µm each in SK hynix's parts) pierced by through-silicon vias (TSVs) and microbump-bonded onto a logic base die that carries the PHY and the host-facing test/repair logic. The 1,024-bit interface is not one wide bus: it is 16 independent channels (each split into two pseudo-channels), each with its own command/address and 64 data bits — the stack behaves as sixteen small memories operating in parallel. The stack sits on a silicon interposer millimetres from the host die; those short, slow wires are the whole trick, letting 1,024 pins run at a moderate 6.4 Gb/s each instead of a few pins at SerDes speeds.
+
+**Trace — one unit of work.**
+1. **Host issues a read.**The host's memory controller picks the channel whose address map owns the target line and issues the read on that channel's command bus — the other fifteen channels are free to serve other requests simultaneously.
+2. **Base die routes upward.**The command crosses the base die and climbs the TSV column to the die and bank that hold the row.
+3. **DRAM core senses.**The target die activates the row into its sense amplifiers — the same ~tens-of-nanoseconds DRAM core latency as any DDR part; HBM hides it with parallelism, not speed.
+4. **Data returns down the TSVs.**The column data travels back through the stack to the base die's PHY.
+5. **Width does the work.**64 bits from this channel × 16 channels in lockstep is 128 bytes per burst beat across the stack — 819 GB/s comes from width multiplied by channels, not from pin heroics.
+
+**Bottleneck in / out.** Relieves the pin wall: package escape and signal integrity cap how many fast pins a die can have, so going wide-and-moderate (1,024 bits at 6.4 Gb/s/pin) wins bandwidth and energy-per-bit that narrow-and-fast interfaces cannot. Creates a beachfront and yield wall — bandwidth scales only by adding stacks around the host die's perimeter, stack height is capped by TSV/thinning limits, and one bad die in a 12-high stack threatens the whole assembly, which is why known-good-die test and stack-level repair dominate HBM cost.
+
+**Governing numbers.** 1,024-bit interface per stack; 16 channels; up to 6.4 Gb/s per pin; 819 GB/s per stack; SK hynix HBM3 ships 8-high (16 GB) and 12-high (24 GB) stacks of 16 Gb dies.
+
+**Primary source.** SK hynix, HBM3 development announcement (Oct 2021); JEDEC JESD238 HBM3 standard (Jan 2022).
+
+### JTAG & Boundary Scan — IEEE 1149.1
+
+#### Inside the signature block: The TAP controller — a 16-state machine in every chip
+
+**Inside it.** Four signal pins (TCK, TMS, TDI, TDO; TRST optional) drive the Test Access Port controller: a finite-state machine with exactly 16 states, identical in every compliant device, sequenced entirely by the value of TMS on each TCK edge. Behind it sit the instruction register — which selects the active test mode (BYPASS, SAMPLE/PRELOAD, EXTEST, plus optional INTEST, IDCODE, USERCODE and vendor-private instructions) — and the data registers: the boundary-scan register (one cell per device pin, each cell able to observe its pin or drive it), the device-ID register, and the bypass register, which is exactly one bit long. Multiple chips chain TDI→TDO into a single board-level scan path.
+
+**Trace — one unit of work.**
+1. **Walk the FSM.**Five TCK cycles with TMS high reset any TAP to Test-Logic-Reset; a scripted TMS sequence then steers both chips on a board, in lockstep, toward Shift-IR.
+2. **Load EXTEST.**The EXTEST opcode shifts into each instruction register and latches at Update-IR — the boundary cells now control the pins.
+3. **Preload and drive.**Shift-DR loads chip A's boundary cells with a test pattern; Update-DR applies those values to A's actual output pins, across real board traces.
+4. **Capture at the receiver.**Chip B's boundary cells capture whatever truly arrived at its input pins — solder opens, shorts and stuck nets included.
+5. **Shift out and compare.**B's captured bits stream out of TDO and are diffed against the board netlist's expectation; a wrong bit localizes the fault to a specific net and pin pair.
+
+**Bottleneck in / out.** Relieves board-level invisibility: BGA packages hid every solder joint beneath the chip and made probe-based board test physically impossible; boundary scan moved the probe points inside the silicon. Creates a speed wall — everything moves serially at TCK rates orders of magnitude below functional speed, so 1149.1 verifies interconnect and gross presence, never timing; at-speed internal test needed scan/ATPG, and embedded instruments later needed IEEE 1687 networks behind this same TAP.
+
+**Governing numbers.** 16 TAP states; bypass register exactly 1 bit (a whole chip passes the chain in one clock); boundary register length equals the device's signal-pin count; instruction register at least 2 bits (four mandatory encodings' worth of space).
+
+**Primary source.** IEEE Std 1149.1-2013, Standard Test Access Port and Boundary-Scan Architecture.
+
+### Memory BIST & Repair (MBIST)
+
+#### Inside the signature block: The algorithm engine — running a March test at full speed
+
+**Inside it.** Per memory cluster, the MBIST block is four sub-blocks behind a test access port (IJTAG/JTAG): a controller that sequences the test and reports status; an algorithm engine — a small programmable sequencer generating address orders (up/down/any) and data backgrounds, with a library of hard-coded March variants selectable per memory; a comparator with fail logging that records the address and cycle of every mismatch; and redundancy analysis (BIRA), which takes the fail map and solves whether the memory's spare rows and columns can cover every failure, then programs the winning repair into eFuses at manufacturing test.
+
+**Trace — one unit of work.**
+1. **March C−, element 1 — initialize.**The engine writes 0 into every cell of the SRAM, in any address order: a known background against which faults can be seen.
+2. **Ascending pass.**Marching up the address space, each cell is read (expect 0) then written 1; the next cell's read checks it was not disturbed by its neighbour's write — coupling faults announce themselves here.
+3. **Ascending pass, inverted.**Still ascending: read 1, write 0 for every cell, flipping the background under the same scrutiny.
+4. **Descending pass.**The same read/write pairs run in reverse address order — order-dependent coupling faults that are structurally invisible to an ascending-only march are caught by symmetry.
+5. **Final read and verdict.**A last read-0 sweep confirms the array; every mismatch along the way sits in the fail log with its address, ready for BIRA to map onto spare rows/columns or condemn the die.
+
+**Bottleneck in / out.** Relieves test access: embedded SRAMs have no pins, and an external tester cannot reach them at functional speed — the BIST engine tests the array at its own clock, catching speed-related faults no ATE pattern could. Creates an area-and-coverage negotiation: engine, comparator and spare rows/columns cost area beside every memory, and the standard 10-operation March C− still misses fault classes (dynamic and linked faults) that longer algorithms — 17 operations per cell and up — buy back with proportionally longer test time.
+
+**Governing numbers.** March C− complexity is 10n (ten operations per cell); the element sequence is {any-order write 0; up (read 0, write 1); up (read 1, write 0); down (read 0, write 1); down (read 1, write 0); any-order read 0}. Longer production algorithms run to 17n+.
+
+**Primary source.** Van de Goor, 'Testing Semiconductor Memories: Theory and Practice' (the March-test canon); IEEE Std 1500 / 1687 access context.
+

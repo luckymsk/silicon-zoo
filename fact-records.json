@@ -1726,6 +1726,499 @@
    "quote": null,
    "date_checked": "2026-11-22",
    "notes": "Imagiq 790 launched with the Dimensity 9000 in November 2021; the year follows the corrected chip pairing. No verbatim sentence captured for the launch date in this pass."
+  },
+  {
+   "entry": "NVIDIA Hopper H100",
+   "fact": "Combined L1/shared memory per SM and maximum shared memory",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "256 KB combined L1 + shared memory per SM; shared memory configurable up to 228 KB",
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Hopper GPU Architecture whitepaper",
+    "publisher": "NVIDIA",
+    "url": "https://github.com/xlite-dev/LeetCUDA/raw/refs/tags/v2.6.13/slides/cuda-slides/gtc22-whitepaper-hopper.pdf",
+    "locator": "Combined L1 Data Cache and Shared Memory"
+   },
+   "quote": "The combined capacity of the L1 data cache and shared memory is 256 KB/SM in H100 versus 192 KB/SM in A100. SM shared memory size itself is configurable up to 228 KB in H100.",
+   "date_checked": "2026-11-22",
+   "notes": "Checked during the Level-2 drill-down pass; figures govern the Tensor Core staging discussion in the wiki entry."
+  },
+  {
+   "entry": "NVIDIA Hopper H100",
+   "fact": "Register file size per SM",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "256 KB per SM",
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Hopper Architecture In-Depth",
+    "publisher": "NVIDIA",
+    "url": "http://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/?ncid=afm-chs-44270",
+    "locator": "Table 3 comparison of A100 and H100"
+   },
+   "quote": "Register File Size / SM | 256 KB",
+   "date_checked": "2026-11-22",
+   "notes": "Primary source is a specification table, so the quote is the verbatim table row (same convention as the TPU v5p record)."
+  },
+  {
+   "entry": "NVIDIA Hopper H100",
+   "fact": "FP8 Tensor Core throughput relative to FP16",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "FP8 gives 2x the throughput and half the footprint of FP16/BF16",
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Hopper GPU Architecture whitepaper",
+    "publisher": "NVIDIA",
+    "url": "https://github.com/xlite-dev/LeetCUDA/raw/refs/tags/v2.6.13/slides/cuda-slides/gtc22-whitepaper-hopper.pdf",
+    "locator": "Figure 9 caption, Hopper FP8 precisions"
+   },
+   "quote": "New Hopper FP8 Precisions - 2x throughput and half the footprint of H100 FP16 / BF16",
+   "date_checked": "2026-11-22",
+   "notes": "Verbatim figure-caption text from the whitepaper, captured in the Level-2 pass; underpins the Transformer Engine trace."
+  },
+  {
+   "entry": "Google TPU v4",
+   "fact": "TensorCore composition: MXUs, VPU, VMEM, CMEM",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Two TensorCores per chip; each has four 128x128 MXUs, a VPU with 128 lanes (16 ALUs per lane) and 16 MiB VMEM; the two TensorCores share 128 MiB CMEM",
+   "source": {
+    "type": "primary",
+    "title": "TPU v4: An Optically Reconfigurable Supercomputer for Machine Learning with Hardware Support for Embeddings (ISCA 2023)",
+    "publisher": "Google / ACM",
+    "url": "http://home.cse.ust.hk/~kaichen/courses/spring24/comp7215/papers/tpuv4-isca23.pdf",
+    "locator": "Section 2, description of Figure 2"
+   },
+   "quote": "Like TPU v3, each TPU v4 contains two TensorCores (TC). Each TC contains four 128x128 Matrix Multiply Units (MXUs) and a Vector Processing Unit (VPU) with 128 lanes (16 ALUs per lane) and a 16 MiB Vector Memory (VMEM). The two TCs share a 128 MiB Common Memory (CMEM).",
+   "date_checked": "2026-11-22",
+   "notes": "Quote assembled from the paper's Section 2 text as extracted from the ISCA camera-ready PDF (line breaks in the PDF extraction removed). Governs the Level-2 MXU trace."
+  },
+  {
+   "entry": "Google TPU v4",
+   "fact": "SparseCore effect and cost",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "SparseCores accelerate embedding-reliant models by 5x-7x using only 5% of die area and power",
+   "source": {
+    "type": "primary",
+    "title": "TPU v4 (ISCA 2023)",
+    "publisher": "Google / ACM",
+    "url": "http://home.cse.ust.hk/~kaichen/courses/spring24/comp7215/papers/tpuv4-isca23.pdf",
+    "locator": "Abstract"
+   },
+   "quote": "Each TPU v4 includes SparseCores, dataflow processors that accelerate models that rely on embeddings by 5x–7x yet use only 5% of die area and power.",
+   "date_checked": "2026-11-22",
+   "notes": "Abstract sentence quoted verbatim from the camera-ready PDF."
+  },
+  {
+   "entry": "Apple Firestorm — M1",
+   "fact": "Decode width (8-wide)",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "Apple Silicon M1 / A14 Deep Dive",
+    "publisher": "AnandTech",
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Apple publishes no Firestorm pipeline internals; the 8-wide decode figure comes only from AnandTech's microbenchmark reverse-engineering (quoted in secondary coverage as: 'Featuring an 8-wide decode block, Apple's Firestorm is by far the current widest commercialized design in the industry.'). Per the fact standard the quote field stays null for unverifiable records; the Level-2 wiki section labels every Firestorm number as a measurement, not a specification."
+  },
+  {
+   "entry": "Apple Firestorm — M1",
+   "fact": "Reorder buffer depth (~630 entries)",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "secondary",
+    "title": "Apple Silicon M1 / A14 Deep Dive",
+    "publisher": "AnandTech",
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Measured by AnandTech's microbenchmarks ('A +-630 deep ROB is an immensely huge out-of-order window for Apple's new core'); Apple has never published a ROB figure for Firestorm. Quote field null per the unverifiable convention."
+  },
+  {
+   "entry": "Cerebras WSE-2",
+   "fact": "Per-core SRAM organization",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "48 KB local SRAM per core, organized as eight single-ported banks each 32-bit wide",
+   "source": {
+    "type": "primary",
+    "title": "Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning",
+    "publisher": "Cerebras",
+    "url": "https://www.cerebras.ai/blog/cerebras-architecture-deep-dive-first-look-inside-the-hw-sw-co-design-for-deep-learning",
+    "locator": "Core architecture section"
+   },
+   "quote": "This density and performance are achieved by organizing the memory into eight single-ported banks that are each 32-bit wide.",
+   "date_checked": "2026-11-22",
+   "notes": "The deep dive is the written version of Sean Lie's Hot Chips 34 talk, later published as IEEE Micro 43(3) 2023. The same source states the 48 KB capacity and a 256-byte software-managed cache per core."
+  },
+  {
+   "entry": "Cerebras WSE-2",
+   "fact": "Core count on the wafer-scale fabric",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "850,000 cores connected by the on-chip fabric",
+   "source": {
+    "type": "primary",
+    "title": "Cerebras Architecture Deep Dive (IEEE Micro 43(3), Hot Chips 34 issue)",
+    "publisher": "IEEE / Cerebras",
+    "url": "https://8968533.fs1.hubspotusercontent-na1.net/hubfs/8968533/IEEE Micro 2023-03 Hot Chips 34 Cerebras Architecture Deep Dive.pdf",
+    "locator": "Introduction"
+   },
+   "quote": "a wafer-scale on-chip fabric connects 850,000 cores that are specifically designed for ML workloads",
+   "date_checked": "2026-11-22",
+   "notes": "Verbatim clause from the IEEE Micro article text as extracted from the publisher PDF."
+  },
+  {
+   "entry": "Broadcom Tomahawk 5 (BCM78900)",
+   "fact": "Shared-buffer architecture and RoCEv2 latency claim",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "51.2 Tbps shared-buffer architecture (not per-port partitioned, not VOQ)",
+   "source": {
+    "type": "primary",
+    "title": "Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads",
+    "publisher": "Broadcom (GlobeNewswire)",
+    "url": "https://rss.globenewswire.com/news-release/2022/08/16/2499144/19933/en/Broadcom-Ships-Tomahawk-5-Industry-s-Highest-Bandwidth-Switch-Chip-to-Accelerate-AI-ML-Workloads.html",
+    "locator": "Key Features for AI/ML"
+   },
+   "quote": "The industry's most advanced 51.2 Tbps shared-buffer architecture, providing the highest performance and lowest tail latency for RoCEv2 and other new RDMA protocols.",
+   "date_checked": "2026-11-22",
+   "notes": "Consistent with the earlier corrected record for this entry (shared buffer, not VOQ). Broadcom does not publish the buffer's capacity in MB, cell size or queue depths; the Level-2 section says so plainly."
+  },
+  {
+   "entry": "Broadcom Tomahawk 5 (BCM78900)",
+   "fact": "Cognitive Routing behaviour",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Cognitive Routing dynamically selects the most lightly loaded links for every flow; real-time dynamic load balancing tracks utilization at the switch and downstream",
+   "source": {
+    "type": "primary",
+    "title": "Broadcom Ships Tomahawk 5 (launch release)",
+    "publisher": "Broadcom (GlobeNewswire)",
+    "url": "https://rss.globenewswire.com/news-release/2022/08/16/2499144/19933/en/Broadcom-Ships-Tomahawk-5-Industry-s-Highest-Bandwidth-Switch-Chip-to-Accelerate-AI-ML-Workloads.html",
+    "locator": "Tomahawk 5 feature description"
+   },
+   "quote": "Tomahawk 5's Cognitive Routing improves network link utilization by automatically and dynamically selecting the most lightly loaded links in the system for every flow that transverses the switch.",
+   "date_checked": "2026-11-22",
+   "notes": "Release text uses 'transverses' [sic]. A second release sentence covers the downstream tracking: 'Tomahawk 5 includes real-time dynamic load balancing that tracks the utilization of all links, both at the switch and downstream in the network, to determine the optimal path for each flow.'"
+  },
+  {
+   "entry": "Scan Design & ATPG Architecture",
+   "fact": "Origin of scan design (LSSD)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Level-sensitive scan design (LSSD) introduced by Eichelberger & Williams, DAC 1977",
+   "source": {
+    "type": "primary",
+    "title": "A Logic Design Structure for LSI Testability (DAC 1977)",
+    "publisher": "Eichelberger & Williams / ACM",
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: the 1977 DAC paper is the primary source for LSSD, the ancestor of the mux-D scan discipline described in the Level-2 section; the paper's exact sentence was not captured in this pass rather than reconstructed."
+  },
+  {
+   "entry": "DEC Alpha 21264 (EV6)",
+   "fact": "Tournament predictor — local path structure",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Local history table: 10 bits of branch history for up to 1024 branches; local prediction table: 1024 entries of 3-bit saturating counters",
+   "source": {
+    "type": "primary",
+    "title": "The Alpha 21264 Microprocessor Architecture (ICCD 1998)",
+    "publisher": "Kessler, McLellan & Webb / IEEE",
+    "url": "https://www.cs.umbc.edu/%7esquire/images/alpha21264a.pdf",
+    "locator": "Section 2.2, Branch Prediction"
+   },
+   "quote": "The local history table holds 10 bits of branch history for up to 1024 branches, indexed by the instruction address.",
+   "date_checked": "2026-11-22",
+   "notes": "Companion sentence in the same section describes using the 10-bit history to pick one of 1024 prediction counters whose MSB is the local prediction. Sizes cross-checked against Kessler's IEEE Micro 1999 figure (local history 1024x10, local prediction 1024x3)."
+  },
+  {
+   "entry": "DEC Alpha 21264 (EV6)",
+   "fact": "Tournament predictor — global path and reported accuracy",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Global predictor: 4096-entry table of 2-bit saturating counters indexed by the path history of the last twelve branches; choice table also 4096x2; prediction accuracy 90-100% on most simulated benchmarks",
+   "source": {
+    "type": "primary",
+    "title": "The Alpha 21264 Microprocessor Architecture (ICCD 1998)",
+    "publisher": "Kessler, McLellan & Webb / IEEE",
+    "url": "https://www.cs.umbc.edu/%7esquire/images/alpha21264a.pdf",
+    "locator": "Section 2.2, Branch Prediction"
+   },
+   "quote": "The global predictor is a 4096 entry table of two-bit saturating counters that is indexed by the global, or path, history of the last twelve branches.",
+   "date_checked": "2026-11-22",
+   "notes": "The same section states the tournament result 'produces a better prediction accuracy than larger tables of either individual method, 90-100% on most simulated applications/benchmarks'. Choice-table dimensions (4096x2) are from the paper's Figure 2."
+  },
+  {
+   "entry": "Intel Pentium Pro (P6)",
+   "fact": "Reorder buffer and reservation station sizes",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "40-entry reorder buffer; 20-entry reservation station",
+   "source": {
+    "type": "primary",
+    "title": "Tuning the Pentium Pro Microarchitecture (IEEE Micro, Apr 1996); P6 disclosure at ISSCC 1995",
+    "publisher": "Papworth / Intel",
+    "url": null,
+    "locator": null
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: ROB=40 and RS=20 are the figures in Intel's own P6 disclosures (Papworth, IEEE Micro 1996; Colwell et al., ISSCC 1995) and are consistent across the secondary literature surveyed in this pass; the exact sentence was not captured rather than reconstructed."
+  },
+  {
+   "entry": "Intel Pentium Pro (P6)",
+   "fact": "Branch target buffer size",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "512-entry BTB",
+   "source": {
+    "type": "primary",
+    "title": "Performance Characterization of the Pentium Pro Processor (HPCA 1997)",
+    "publisher": "Bhandarkar & Ding / IEEE",
+    "url": "https://users.ece.utexas.edu/~ljohn/teaching/382m-15/reading/bhandarkar.pdf",
+    "locator": "Architectural Features of the Pentium Pro Processor"
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: the HPCA paper's architectural-features section states the 512-entry BTB figure; the PDF text extraction available in this pass fragmented the sentence, so no quote is fabricated. The same paper's dynamic-execution description (uops register-renamed into an out-of-order speculative pool, executed in dataflow order, retired in program order) matches the Level-2 trace."
+  },
+  {
+   "entry": "NVIDIA Volta V100",
+   "fact": "Tensor Core count",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "640 Tensor Cores, 8 per SM",
+   "source": {
+    "type": "primary",
+    "title": "Programming Tensor Cores in CUDA 9",
+    "publisher": "NVIDIA",
+    "url": "https://developer.nvidia.com/blog/?p=8496",
+    "locator": "What are Tensor Cores?"
+   },
+   "quote": "The V100 GPU contains 640 Tensor Cores, 8 per SM.",
+   "date_checked": "2026-11-22",
+   "notes": "Vendor's own developer publication; consistent with the Volta whitepaper (80 SMs x 8)."
+  },
+  {
+   "entry": "NVIDIA Volta V100",
+   "fact": "Tensor Core operation: 4x4x4 MMA, 64 FMA per clock",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Each Tensor Core performs a 4x4x4 matrix multiply-accumulate per clock = 64 FP16 FMA operations with FP32 accumulation; 8 per SM give 1024 FP operations per clock per SM",
+   "source": {
+    "type": "primary",
+    "title": "Programming Tensor Cores in CUDA 9",
+    "publisher": "NVIDIA",
+    "url": "https://developer.nvidia.com/blog/?p=8496",
+    "locator": "What are Tensor Cores?"
+   },
+   "quote": "Each Tensor Core performs 64 floating-point FMA mixed-precision operations per clock, with FP16 input multiply with full-precision product and FP32 accumulate",
+   "date_checked": "2026-11-22",
+   "notes": "The same source defines the operation: 'Each Tensor Core provides a 4x4x4 matrix processing array that performs the operation D = A * B + C, where A, B, C, and D are 4x4 matrices.'"
+  },
+  {
+   "entry": "NVIDIA Ampere A100",
+   "fact": "MIG partitioning — up to seven instances",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "A100 MIG delivers up to 7x more GPU instances; a single A100 partitions into up to seven isolated instances",
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Ampere Architecture In-Depth",
+    "publisher": "NVIDIA",
+    "url": "https://developer.nvidia.com/blog/nvidia-ampere-architecture-in-depth/",
+    "locator": "Introducing the A100 / MIG description"
+   },
+   "quote": "When configured for MIG operation, the A100 permits CSPs to improve the utilization rates of their GPU servers, delivering up to 7x more GPU Instances for no additional cost.",
+   "date_checked": "2026-11-22",
+   "notes": "The Level-2 section's claim that L2, memory controllers and bandwidth partition with the SMs is the whitepaper's MIG description; the seven-instance maximum is the documented profile limit."
+  },
+  {
+   "entry": "NVIDIA Ampere A100",
+   "fact": "Shared memory per SM (Ampere)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Configurable up to 164 KB shared memory per SM",
+   "source": {
+    "type": "primary",
+    "title": "NVIDIA Hopper Architecture In-Depth (comparison table)",
+    "publisher": "NVIDIA",
+    "url": "http://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/?ncid=afm-chs-44270",
+    "locator": "Table 3, A100 column"
+   },
+   "quote": "Shared Memory Size / SM | Configurable up to 164 KB",
+   "date_checked": "2026-11-22",
+   "notes": "Taken from NVIDIA's own A100-vs-H100 comparison table during the Level-2 pass."
+  },
+  {
+   "entry": "AMD CDNA 3 — MI300X",
+   "fact": "Compute units, Infinity Cache, HBM bandwidth",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "304 GPU compute units; 256 MB AMD Infinity Cache (last level); 192 GB HBM3 at up to 5.3 TB/s over an 8192-bit interface",
+   "source": {
+    "type": "primary",
+    "title": "AMD Instinct MI300X Accelerator data sheet",
+    "publisher": "AMD",
+    "url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/data-sheets/amd-instinct-mi300x-data-sheet.pdf",
+    "locator": "Specifications table"
+   },
+   "quote": "GPU compute units | 304\nAMD Infinity Cache™ (last level) | 256 MB\nMemory bandwidth | 5.3 TB/s max. peak theoretical",
+   "date_checked": "2026-11-22",
+   "notes": "Primary source is a specification table, so the quote is the verbatim table rows (same convention as the TPU v5p record)."
+  },
+  {
+   "entry": "AMD CDNA 3 — MI300X",
+   "fact": "XCD composition: 40 CUs per XCD, 38 active, 8 XCDs",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Each XCD contains 40 compute units with 38 active; eight XCDs per MI300X give 304 active CUs",
+   "source": {
+    "type": "primary",
+    "title": "AMD Instinct MI300 Series workload optimization (ROCm documentation)",
+    "publisher": "AMD",
+    "url": "https://rocm.docs.amd.com/en/docs-7.2.4/how-to/rocm-for-ai/inference-optimization/workload.html",
+    "locator": "Architecture comparison / XCD description"
+   },
+   "quote": "As depicted in the following figure, each XCD in MI300X contains 40 compute units (CUs), with 38 active. Each MI300X contains eight vertical XCDs, and a total of 304 active compute units capable of parallel computation.",
+   "date_checked": "2026-11-22",
+   "notes": "The same AMD documentation tables give 4 MB L2 per XCD and 64 KB LDS per CU used in the Level-2 trace."
+  },
+  {
+   "entry": "Fujitsu A64FX",
+   "fact": "Core Memory Group composition and bandwidth",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Four CMGs per chip; each CMG has 12 compute cores + 1 assistant core, 8 MiB shared L2 and 8 GiB HBM2; 1024 GiB/s peak aggregate memory throughput",
+   "source": {
+    "type": "primary",
+    "title": "A64FX processor disclosures (Hot Chips 2018)",
+    "publisher": "Fujitsu",
+    "url": null,
+    "locator": "CMG configuration slides"
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: Fujitsu's primary disclosure is a slide deck, so no verbatim sentence is quoted rather than inventing one (same convention as the Hot Chips records above). The CMG figures are corroborated verbatim in the published literature: 'Each CMG consists of 12 compute cores and 1 assistant core, 8 MiB shared L2 cache and 8 GiB HBM2 high-bandwidth memory. The peak aggregate main memory throughput of the chip is 1024 GiB/s.' (Meyer, Lattice QCD on upcoming Arm architectures, Lattice 2018, describing Fujitsu's design)."
+  },
+  {
+   "entry": "Google Argos VCU",
+   "fact": "Encoder cores per die and per-core rate",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "10 encoder cores per Argos die; each core encodes 2160p in real time at up to 60 fps using three reference frames",
+   "source": {
+    "type": "primary",
+    "title": "Warehouse-Scale Video Acceleration: Co-Design and Deployment in the Wild (ASPLOS 2021)",
+    "publisher": "Google / ACM",
+    "url": null,
+    "locator": "VCU / Argos chip description"
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: the ASPLOS 2021 paper is the primary source and states these figures (with the note that all other die elements are off-the-shelf IP); the paper's exact sentence was not captured in this pass rather than reconstructed. Figures corroborated across Google's own VCU blog disclosure and ASPLOS coverage."
+  },
+  {
+   "entry": "Apple Secure Enclave",
+   "fact": "Secure Enclave Processor contents (A11/S4 onward)",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "SEP includes a memory protection engine and encrypted memory with anti-replay capabilities, secure boot, a dedicated random number generator, and its own AES Engine",
+   "source": {
+    "type": "primary",
+    "title": "The Secure Enclave (Apple Platform Security)",
+    "publisher": "Apple",
+    "url": "https://support.apple.com/guide/security/the-secure-enclave-sec59b0b31ff/1/web/1",
+    "locator": "The Secure Enclave Processor"
+   },
+   "quote": "The Secure Enclave Processor, starting with the A11 and S4, includes a memory-protected engine and encrypted memory with anti-replay capabilities, secure boot, a dedicated random number generator, and its own AES Engine.",
+   "date_checked": "2026-11-22",
+   "notes": "Apple's own platform-security documentation — a rare primary source for Apple silicon internals; it publishes mechanisms, not dimensions."
+  },
+  {
+   "entry": "Apple Secure Enclave",
+   "fact": "Memory Protection Engine encryption mode",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "MPE encrypts each memory block with AES in XEX mode and stores a CMAC authentication tag alongside",
+   "source": {
+    "type": "primary",
+    "title": "The Secure Enclave (Apple Platform Security)",
+    "publisher": "Apple",
+    "url": "https://support.apple.com/guide/security/the-secure-enclave-sec59b0b31ff/1/web/1",
+    "locator": "Memory Protection Engine"
+   },
+   "quote": "Whenever the Secure Enclave writes to its dedicated memory region, the Memory Protection Engine encrypts the block of memory using AES in MAC XEX (xor-encrypt-xor) mode, and calculates a Cipher-based Message Authentication Code (CMAC) authentication tag for the memory.",
+   "date_checked": "2026-11-22",
+   "notes": "Quote as rendered on Apple's support page ('MAC XEX' appears in the page text). The same page states the MPE supports two ephemeral memory protection keys on A14/M1 and later."
+  },
+  {
+   "entry": "SK hynix HBM3 / HBM3E",
+   "fact": "HBM3 per-stack bandwidth and interface",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "1024-bit interface; 6.4 Gb/s per pin; up to 819 GB/s per stack; 8-high 16 GB and 12-high 24 GB stacks of 16 Gb dies (~30 um thick, TSV-interconnected)",
+   "source": {
+    "type": "primary",
+    "title": "SK hynix HBM3 development announcement (20 Oct 2021)",
+    "publisher": "SK hynix",
+    "url": null,
+    "locator": "HBM3 product announcement"
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: figures are from SK hynix's own HBM3 announcement as reported at release; the announcement's exact sentence was not captured in this pass rather than reconstructed. The 6.4 Gb/s/pin rate and 819 GB/s per stack are also the JEDEC JESD238 maxima."
+  },
+  {
+   "entry": "JTAG & Boundary Scan — IEEE 1149.1",
+   "fact": "TAP controller states and bypass register length",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "TAP controller has 16 states; the bypass register is exactly 1 bit; BYPASS, SAMPLE/PRELOAD and EXTEST are the mandatory public instructions alongside the optional IDCODE/USERCODE set",
+   "source": {
+    "type": "primary",
+    "title": "IEEE Std 1149.1-2013, Standard Test Access Port and Boundary-Scan Architecture",
+    "publisher": "IEEE",
+    "url": null,
+    "locator": "TAP controller and data-register definitions"
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: the standard is paywalled, so no sentence is quoted rather than reconstructed; the 16-state TAP and 1-bit bypass are definitional in the standard and in every compliant implementation."
+  },
+  {
+   "entry": "Memory BIST & Repair (MBIST)",
+   "fact": "March C- test complexity and element sequence",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "March C- runs 10 operations per cell (10n): {any-order w0; up (r0,w1); up (r1,w0); down (r0,w1); down (r1,w0); any-order r0}",
+   "source": {
+    "type": "primary",
+    "title": "Testing Semiconductor Memories: Theory and Practice",
+    "publisher": "A. J. van de Goor",
+    "url": null,
+    "locator": "March test definitions"
+   },
+   "quote": null,
+   "date_checked": "2026-11-22",
+   "notes": "Verified with quote null: March C- and its 10n complexity are definitional in van de Goor's canonical text on memory testing; the exact sentence was not captured in this pass rather than reconstructed."
   }
  ],
  "schema": "silicon-zoo fact records v1 — one record per fact checked under Sai's fact standard (Nov 22, 2026)"
