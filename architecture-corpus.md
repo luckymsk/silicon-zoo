@@ -1271,3 +1271,811 @@ The first Level-2 pass (Sai, Nov 22, 2026: "the drill down, go further if you ca
 
 **Primary source.** Van de Goor, 'Testing Semiconductor Memories: Theory and Practice' (the March-test canon); IEEE Std 1500 / 1687 access context.
 
+
+### Intel 4004
+
+#### Inside the signature block: The address register — program counter and 3-level stack as a dynamic RAM array
+
+**Inside it.** The 4004's most pinched resource was pins: a 16-pin DIP cannot carry separate address and data buses, so the whole machine funnels through four data lines (D0–D3) and an 8-phase machine cycle. The address register is the block that makes that work: a dynamic RAM cell array of 4 × 12 bits — one level holds the program counter, the other three form a push-down stack for subroutine return addresses, so calls nest only three deep. The stack address comes from the effective address counter and from a refresh counter (dynamic cells must be re-read to hold their charge), multiplexed into the decoder. The address, once read, sits in an address buffer and is demultiplexed onto the internal 4-line bus in three 4-bit slices; a 4-bit carry-look-ahead incrementer advances it by one after the last slice, and the incremented address is written back into the array. The instruction register is two 4-bit halves, OPR (opcode) and OPA (modifier), loaded from the internal bus at M1 and M2; a double-cycle flip-flop stretches the cycle to 16 clock periods for the five double-length instructions.
+
+**Trace — one unit of work: a single-word ADD.**
+1. **SYNC.** The CPU raises SYNC to mark the start of a machine cycle; ROMs and RAMs listen for it.
+2. **A1 — low slice.** The address buffer puts the program counter's lowest 4 bits on D0–D3; the selected 4001 ROM latches them.
+3. **A2 — middle slice.** The next 4 bits follow; the ROM now holds 8 of the 12 address bits.
+4. **A3 — high slice.** The last 4 bits complete the 12-bit address; the incrementer advances the program counter by one and writes it back into the address register.
+5. **M1 — opcode in.** The ROM returns the instruction's upper nibble (OPR) on the bus; it is latched into the OPR register.
+6. **M2 — operand in.** The ROM returns the lower nibble (OPA — here, the index-register number); it is latched into the OPA register.
+7. **X1–X3 — execute.** The decoder gates the named index register's 4 bits onto the internal bus and into the ADB register; the 4-bit adder combines it with the accumulator and the carry flip-flop; the sum lands back in the accumulator, the carry flip-flop records any overflow, and the condition logic notes whether the result is zero. The next SYNC starts the following instruction.
+
+**Bottleneck in / out.** Relieves the pin-count wall: multiplexing 12-bit addresses, 8-bit instructions and 4-bit data over four lines is what lets a complete CPU fit in a 16-pin package at all. Creates the bus-time wall instead — five of the eight clock periods in every cycle are spent just moving the address and the instruction across those four wires, leaving three for execution; a double-word instruction costs a second full cycle. And because the address and index registers are dynamic RAM arrays, the chip pays a refresh tax: reset must be held for at least eight full instruction cycles (64 clock periods) so the refresh counter can scan every location before the CPU is usable.
+
+**Governing numbers.** 8 clock periods per machine cycle (10.8 µs at 740 kHz); 16 clock periods for double-length instructions; address register 4 × 12 bits (1 PC + 3 stack levels); index register 16 × 4 bits; reset ≥ 8 instruction cycles (64 clock periods) to clear; up to 4K × 8 ROM and 1,280 × 4 RAM addressable.
+
+**Primary source.** Intel, MCS-4 User's Manual (1973), §II '4 Bit Central Processor Unit (CPU) — 4004' and Figure 2, 'MCS-4 Basic Instruction Cycle'.
+
+#### Inside the signature block: The 4-bit adder, accumulator and decimal-adjust ROMs
+
+**Inside it.** The compute heart is deliberately minimal: a 4-bit ripple-through-carry adder, one operand from the ADB register (fed from the internal bus), the other from the 4-bit accumulator plus the carry flip-flop. The accumulator carries a shifter for rotate-left/rotate-right, and talks to the command-control register, the condition logic and the internal bus. The clever piece is beside it: small special ROMs that perform code conversion for the DAA (decimal adjust accumulator) and KBP (keyboard process) instructions — a lookup table in silicon that turns a binary sum into a decimal digit, so the chip adds in the decimal system its calculator workload actually uses. The condition logic watches ADD = 0, ACC = 0, the carry flip-flop and the external TEST pin to implement conditional jumps (JCN) and increment-and-skip (ISZ).
+
+**Trace — one unit of work: adding two decimal digits, 9 + 8.**
+1. **ADD executes.** The index register holding 8 reaches the ADB register; the adder computes 9 + 8 = 17, binary 10001 — the low nibble (0001) lands in the accumulator and the carry flip-flop is set.
+2. **DAA executes.** The decimal-adjust instruction consults the special ROM: the low nibble overflowed past 9 (carry out of the nibble), so the conversion adds 6 to it.
+3. **Result corrected.** The accumulator now holds 0111 (7) with the carry representing the tens digit — 0x17 in BCD, i.e. 17 decimal, the correct decimal answer, with no software conversion step.
+4. **Condition logic watches.** ADD = 0 and ACC = 0 are sensed after every operation, so a following JCN or ISZ can branch on the result without a separate compare instruction.
+
+**Bottleneck in / out.** Relieves the decimal-arithmetic wall: BCD lives in the hardware, so a calculator program adds digits natively instead of converting binary results in software — the manual advertises adding two 8-digit numbers in 850 µs. Creates the width wall instead: every operation wider than one digit is a software loop of 4-bit steps through the single accumulator, and the ripple-through-carry adder has no look-ahead, so the datapath is fundamentally one digit per instruction cycle.
+
+**Governing numbers.** 4-bit ripple-through-carry adder; accumulator 4 bits + 1 carry flip-flop; adding two 8-digit numbers takes 850 µs (Intel's own figure); instruction set 45 instructions in the manual's count (16 machine — 5 double-length — plus 14 accumulator-group and 15 I/O & RAM).
+
+**Primary source.** Intel, MCS-4 User's Manual (1973), §II '4-Bit Adder' and 'Instruction Register Decoder and Control'; cover, 'Addition of Two 8-Digit Numbers in 850 Microseconds'.
+
+### MOS Technology 6502
+
+#### Inside the signature block: The decode PLA and the timing sequencer — the whole control unit in one array
+
+**Inside it.** There is no microcode ROM and no stored control program in the 6502. The entire control unit is one combinational array plus a small shift register. The fetched opcode byte is latched into the instruction register and its predecode register; the decode ROM — a 130-row by 21-column array — matches the opcode's bit pattern against its rows and raises 131 PLA outputs (pla0–pla130), which fan out as roughly 44 datapath control signals (dpc0–dpc43) telling every register, bus driver and ALU input what to do in the current cycle. A T-state shift register steps the machine through its timing states (T0–T5), so each instruction is a fixed walk through the states its PLA row names — T0 for the opcode fetch, T1–T2 for operand bytes, T3–T5 for the work itself. The program counter has its own dedicated increment circuit, able to increment all 16 bits in a single cycle, and it almost always increments during the fetch cycle so the next byte is already addressed.
+
+**Trace — one unit of work: LDA $2000 (opcode $AD, absolute addressing, 4 cycles).**
+1. **Cycle 1 (T0) — opcode fetch.** The PC puts the opcode's address on the bus; the opcode byte $AD returns and is latched into the instruction register and predecode register; the dedicated increment circuit advances the PC by one in the same cycle.
+2. **Cycle 2 (T1) — low address byte.** The PLA's outputs have settled and steer the datapath; the byte $00 is fetched from the PC's new address and latched as the low half of the effective address; the PC increments again.
+3. **Cycle 3 (T2) — high address byte.** The byte $20 is fetched and latched as the high half; the effective address $2000 is now complete and driven onto the address bus; the PC increments to the next instruction.
+4. **Cycle 4 (T3) — data.** The byte at $2000 is fetched from memory and lands in the accumulator; the N and Z flags update from it. The next instruction's fetch begins on the following cycle.
+
+**Bottleneck in / out.** Relieves the control-cost wall: a stored microcode sequencer would have cost transistors the $25 chip did not have — one PLA plus a shift register is the whole control unit, and it is a large part of how the die stayed at 3,510 transistors. Creates a fixed-at-mask control plane: decode is combinational pattern-matching, not a list of legal instructions, so opcode patterns the manual never lists still fire PLA rows — the source of the 6502's undocumented opcodes — and a decode behaviour can only be changed by cutting silicon, as Nintendo did when it removed decimal mode from the NES CPU. The PLA is also the single funnel every instruction's control passes through: its 21 output columns bound how many distinct control actions one opcode can raise.
+
+**Governing numbers.** Decode ROM 130 rows × 21 outputs; 131 PLA outputs (pla0–pla130); ~44 datapath control signals (dpc0–dpc43); timing states T0–T5; PC increment across all 16 bits in a single cycle; LDA absolute takes 4 cycles.
+
+**Primary source.** MOS Technology, MCS6502 Microcomputer Family Hardware Manual (January 1976); Visual6502 project, 6502/6507 Decode ROM transcription (NESdev wiki); visual6502 nodenames.js signal catalogue.
+
+#### Inside the signature block: The ALU — two nibble adders with a decimal adjust
+
+**Inside it.** The arithmetic heart is an 8-bit ALU built as two 4-bit nibble adders, not one byte-wide adder. The two operands and the carry-in are added as a pair of nibbles, and the carry-out from bit 3 is adjusted in decimal mode — so the ALU is, in the visual6502 project's words, a pair of binary nibble ALUs with a decimal adjustment. The accumulator feeds one side; the operand arrives from the internal data bus. The D flag in the status register selects binary-coded decimal: each byte then holds two decimal digits, and the adjust logic adds 6 to any nibble that overflows past 9. Decimal mode was one of the chip's selling points over its predecessor the 6800, and it was patent-protected — which is why later clones had to cut it out of the silicon rather than switch it off.
+
+**Trace — one unit of work: adding $99 + $01 in decimal mode (ADC, D flag set, carry clear).**
+1. **Setup.** SED sets the D flag; the accumulator holds $99; the carry flag is clear.
+2. **Low nibble.** The low nibble ALU adds 9 + 1 = 10 — past 9, so the decimal adjust adds 6: the low nibble becomes 0 and a carry passes to the high nibble.
+3. **High nibble.** The high nibble ALU adds 9 + 0 + the nibble carry = 10 — again past 9, so the adjust adds 6: the high nibble becomes 0 and the carry-out is set.
+4. **Result.** The accumulator holds $00 with the carry flag set — the correct decimal answer, 99 + 1 = 100, expressed as $00 plus carry. The N, V and Z flags are also set by the operation, but on the NMOS 6502 they do not correspond to a 10's-complement decimal result and must not be branched on after a decimal ADC or SBC.
+
+**Bottleneck in / out.** Relieves the decimal-arithmetic wall: decimal mode saves an instruction and a couple of cycles from each byte of decimal arithmetic, and removes the half-carry from the status byte — scorekeeping, money and game code could add packed BCD natively instead of converting in software. Creates a flag-semantics trap instead: in decimal mode on the NMOS part only the carry flag is usefully set, so N, V and Z after ADC/SBC are misleading; and because the feature was patent-protected, Nintendo's NES CPU (the 2A03) had decimal mode physically removed — five transistors deleted from the polysilicon mask — rather than disabled.
+
+**Governing numbers.** Two 4-bit nibble adders make the 8-bit ALU; decimal mode affects only ADC and SBC; on the NMOS 6502 only the carry flag is usefully set in decimal mode; the NES 2A03 lost decimal mode by the removal of 5 transistors.
+
+**Primary source.** NESdev wiki, Visual6502wiki/6502DecimalMode (visual6502 project); MOS Technology, MCS6502 Microcomputer Family Hardware Manual (January 1976).
+
+### AMD Zen 4
+
+#### Inside the signature block: The op cache and branch predictor — the front end that feeds the machine
+
+**Inside it.** The Zen 4 front end is two prediction structures feeding one decoded-instruction store. The branch predictor predicts up to two taken branches per cycle, consulting a two-level branch target buffer: a 1.5K-entry L1 BTB in which each entry holds up to two targets — the second must sit in the same aligned 64-byte cache line as the first conditional branch — backed by a 7K-entry L2 BTB, plus a larger, improved conditional branch predictor. The predicted fetch address goes first to the op cache — 6,750 decoded macro-ops, 68% larger than Zen 3's 4,096 and able to deliver up to 9 macro-ops per cycle — and only on a miss to the 32 KB L1 instruction cache and the 4-wide decoder, which refills the op cache as it decodes. Between the op cache and the back end sits the micro-op queue, which meters decoded ops out at 6 µops per clock into rename and dispatch. Rename draws on a 224-entry integer physical register file and a 192-entry FP/vector physical register file widened to 512 bits, with a separate 68-entry mask register file for AVX-512 predicates; the reorder buffer holds 320 in-flight instructions.
+
+**Trace — one unit of work: one iteration of a tight loop, already warm in the op cache.**
+1. **Predict.** The loop-back branch is predicted from the L1 BTB — two targets per entry let the predictor cover the loop branch and the branch after it in the same line — and with two taken branches predicted per cycle the fetch stream stays ahead of execution.
+2. **Op-cache hit.** The fetch address hits the op cache; up to 9 macro-ops of the loop body stream out in one cycle — no decode, no L1I access, no power spent re-decoding the same bytes.
+3. **Queue.** The macro-ops land in the micro-op queue, which hands at most 6 µops per clock onward — the op cache's 9-per-cycle burst only matters when the queue has run low.
+4. **Rename and allocate.** Each µop is renamed against the 224-entry integer or 192-entry FP physical register files (masks against the 68-entry mask file), takes a slot in the 320-entry reorder buffer, and is assigned to an integer or FP scheduler.
+5. **Execute and retire.** The schedulers fire the µops when their operands are ready; results write back through the bypass network and the reorder buffer retires them in order.
+6. **Miss path.** On an op-cache miss the same address fetches from the 32 KB L1I and the 4-wide decoder cracks the x86 bytes into macro-ops, filling the op cache so the next loop iteration takes the fast path.
+
+**Bottleneck in / out.** Relieves the decode wall: a 4-wide decoder can only produce four instructions per cycle, so without the op cache the 6-µop dispatch engine would starve on any loop the decoder could not keep up with — and the op cache shortens redirect latency after a correct prediction, because the target's decoded ops are already waiting. AMD credits the wider front end and better branch prediction with 60% of Zen 4's IPC gain (per Tom's Hardware's account of AMD's disclosure). Creates two new ceilings instead: the micro-op queue's fixed 6 µops-per-clock output caps the op cache's 9-per-cycle burst, so the front end's gain shows up as burst refills rather than sustained 9-wide issue; and the 320-entry reorder buffer still bounds the speculation window — a mispredict flushes up to 320 in-flight instructions, and the deeper the window, the more work a wrong prediction discards.
+
+**Governing numbers.** Op cache 6,750 macro-ops (Zen 3: 4,096), up to 9 macro-ops/cycle out; micro-op queue output 6 µops/clock; L1 BTB 2×1.5K entries, two targets per entry; L2 BTB 2×7K entries; 2 taken branch predictions per cycle; 4-wide decode; reorder buffer 320 entries (Zen 3: 256); integer register file 224, FP register file 192 × 512-bit, mask register file 68; L1I 32 KB.
+
+**Primary source.** AMD, "AMD Next Generation 'Zen 4' Core and 4th Gen AMD EPYC 9004 Server CPU", Hot Chips 35, August 2023 (K. Troester & R. Bhargava); AnandTech, "AMD Zen 4 Ryzen 9 7950X and Ryzen 5 7600X Review: Retaking The High-End" (R. Smith & G. Bonshor, September 2022).
+
+#### Inside the signature block: The double-pumped AVX-512 datapath — 512-bit instructions on 256-bit pipes
+
+**Inside it.** Zen 4's floating-point cluster is four 256-bit-wide execution pipes — two FMA (MAC) pipes and two add/multiply pipes — plus a float-to-int pipe and one exception: a dedicated full-width 512-bit shuffle unit. The FP scheduler issues AVX-512 macro-ops to these pipes; a 512-bit op is split into its low and high 256-bit halves and occupies a pipe for two consecutive cycles — double-pumped, in AMD's term — so the datapath never widens and never throttles. Operands live in a 192-entry FP/vector physical register file widened to 512 bits, with a separate 68-entry mask register file holding the per-lane predicates. Feeding the pipes is the load/store unit: two 256-bit loads and one 256-bit store per cycle from the 32 KB, 8-way L1 data cache, behind an 88-entry load queue and a 64-entry store queue; the 1 MB, 8-way L2 sits behind at 14 cycles.
+
+**Trace — one unit of work: one 512-bit FMA, VFMADD132PD zmm0, zmm1, zmm2 (eight double-precision lanes).**
+1. **Dispatch.** The instruction decodes to a single macro-op; it is renamed against the 512-bit-wide FP register file (its mask operand against the mask file) and takes a slot in the FP scheduler and the 320-entry reorder buffer.
+2. **Issue.** When zmm1 and zmm2 are ready, the FP scheduler issues the macro-op to one of the two 256-bit MAC pipes and reserves that pipe for two consecutive cycles.
+3. **Cycle 1 — low half.** Lanes 0–3 (the low 256 bits) flow through the MAC pipe: multiply, then add into the accumulator half.
+4. **Cycle 2 — high half.** Lanes 4–7 flow through the same pipe in the next cycle; the mask register suppresses any masked lanes so they neither compute nor write.
+5. **Writeback.** The full 512-bit result lands in the FP register file — FMA latency is 4 cycles for the 256-bit form, and the 512-bit form occupies its pipe for a second consecutive cycle — and dependent ops can forward from the bypass network.
+6. **Feeding it.** The operands arrived earlier through the load/store unit: a 512-bit vector load takes two cycles on the 256-bit load ports (two 256-bit loads per cycle from L1D), while a 512-bit shuffle, uniquely, takes one cycle on the dedicated full-width shuffle unit.
+
+**Bottleneck in / out.** Relieves the instruction-count and power wall: one 512-bit instruction does the work of two 256-bit ones, so AVX-512 code needs up to 50% fewer instructions than AVX2 (AMD's figure), which cuts fetch, decode and out-of-order tracking power and lets the core hold frequency where full-width implementations throttle — AMD reports a +17% effective-frequency gain on an HPL kernel in power-limited systems. Creates the half-throughput wall instead: 512-bit FP throughput is two instructions per cycle (one FMA plus one FADD), half the four-per-cycle rate at 256-bit width; the load/store unit stays 256-bit per port, so 512-bit memory ops cost two cycles; and gather/scatter are microcoded sequences of roughly four to five macro-ops per element, slow enough that the LLVM cost model treats them as a special case.
+
+**Governing numbers.** 4× 256-bit FP pipes (2 FMA/MAC + 2 ADD/MUL) plus a dedicated 512-bit shuffle unit; most 512-bit ops execute over 2 consecutive cycles; 512-bit FP throughput 2 instructions/cycle (1 FMA + 1 FADD) vs 4/cycle at 256-bit; FADD/FMUL latency 3 cycles, FMA 4 cycles (256-bit forms); FP register file 192 × 512-bit, mask register file 68; load/store 2× 256-bit loads + 1× 256-bit store per cycle; load queue 88, store queue 64; L1D 32 KB 8-way; L2 1 MB 8-way, 14-cycle latency; L3 latency 50 cycles.
+
+**Primary source.** AMD, "AMD Next Generation 'Zen 4' Core and 4th Gen AMD EPYC 9004 Server CPU", Hot Chips 35, August 2023, "AVX-512" and "Power Efficient AVX-512" slides; independent teardown: "Zen4's AVX512 Teardown" (mersenneforum.org, September 2022).
+
+### Intel Golden Cove
+
+#### Inside the signature block: The 6-wide front end — 32-byte fetch, six decoders and the 4K µop cache
+
+**Inside it.** Golden Cove's front end is the biggest genealogical change in the core since Sandy Bridge: everything in it exists to feed a 6-wide back end without paying the power cost of a 6-wide decoder. The branch predictor steers it — an improved direction predictor behind a 12K-entry branch target buffer (up from 5K in Sunny Cove), which Intel says an on-chip ML model grows or shrinks to fit the running workload; independent measurement found the BTB behaves like three levels, with a 1-cycle penalty for missing one level and hitting the next. Fetch comes from a 32 KB L1 instruction cache, unchanged in size but doubled in bandwidth to 32 bytes per cycle (from 16), with the L1 iTLB doubled to 256 entries for 4K pages (32 for 2M/4M huge pages). Two supply paths feed the µop queue: the legacy MITE path — six instruction decoders (up from four), with the old complex-decoder arrangement removed — and the decoded-µop cache (DSB) path, nearly doubled to 4K entries (from 2.25K) and widened to deliver 8 µops per cycle (from 6). The µop queue itself holds 144 entries when one SMT thread runs (72 per thread with both threads active), and the legacy decoder is clock-gated about 80% of the time, with the µop cache doing the feeding instead.
+
+**Trace — one unit of work: one iteration of a tight loop, already warm in the µop cache.**
+1. **Predict.** The loop-back branch is predicted from the BTB — up to two taken branches per cycle — and the fetch address is formed.
+2. **µop-cache hit.** The address hits the 4K-entry µop cache; up to 8 decoded µops stream out in one cycle — no decode, no L1I access.
+3. **Queue.** The µops land in the 144-entry µop queue, which absorbs bursts and smooths the flow into the back end.
+4. **Allocate.** The queue meters up to 6 µops per cycle into rename and allocate, where move elimination and zeroing-idiom elimination can remove µops outright before they ever reach an execution port.
+5. **Miss path.** On a µop-cache miss the same address fetches 32 bytes per cycle from the L1I and the six decoders crack the x86 bytes into µops, filling the µop cache so the next loop iteration takes the fast path.
+
+**Bottleneck in / out.** Relieves the decode wall: a 4-wide decoder fed by 16 bytes per cycle could not have kept a 6-wide back end busy, and the wider fetch plus the enlarged µop cache let the front end deliver 6 µops per cycle while keeping the power-hungry decoder dark ~80% of the time. Creates two new ceilings instead: the wider machine raises the cost of a mispredict, which is why the BTB grew 2.4× and prediction was reworked — and the measured branch-throughput ceiling is lower than it looks: only about 128 branches can be handled at roughly one per cycle (a regression from Sunny Cove), and returns are slow once calls nest more than two deep, so deep call chains still stall the front end.
+
+**Governing numbers.** Fetch 32 bytes/cycle (Sunny Cove: 16); decoders 6 (from 4); µop cache 4K entries, 8 µops/cycle out (2.25K / 6); µop queue 144 entries single-thread, 72 per thread under SMT; L1I 32 KB; L1 iTLB 256 entries (4K pages), 32 (2M/4M); BTB 12K entries (from 5K); 2 taken branches per cycle; decoder clock-gated ~80% of the time.
+
+**Primary source.** Intel Architecture Day 2021, as reported by AnandTech, "Intel Architecture Day 2021: Alder Lake, Golden Cove, and Gracemont Detailed" (I. Cutress & A. Frumusanu, August 2021) and WikiChip Fuse, "Intel Details Golden Cove" (August 2021); independent measurement: Chips and Cheese, "Popping the Hood on Golden Cove" (December 2021).
+
+#### Inside the signature block: The 12-port back end — unified scheduler, 512-entry ROB and the 3-load memory subsystem
+
+**Inside it.** The back end is wider and deeper in every dimension at once. Allocation is 6-wide into a 512-entry reorder buffer (up from 352 in Sunny Cove, +45%), with rename tricks that collapse work before it is scheduled: move elimination at 6 per cycle and zeroing-idiom elimination, plus execution of simple instructions during rename/allocate to shorten dependency chains. The unified scheduler — one queue for integer and FP/vector math, separate from the address-generation scheduler — holds 205 entries in total (measured), dispatching to 12 execution ports (up from 10). Five of those are integer ALU pipes, the most in any x86 CPU to date, and all five do single-cycle LEA; floating-point and vector work runs on ports 0, 1 and 5, where new fast adders (FADD) on ports 1 and 5 cut FP-add latency to 3 cycles with a 2-cycle bypass for back-to-back adds (previously 4 cycles on ports 0/1 and 6 on port 5). The register files grew to match: the vector/FP file went from 224 to 332 entries, while the integer file stayed at 280 (248 usable plus 32). Feeding it all is the memory subsystem: a third load AGU on new port 11 gives three loads and two stores per cycle — three 256-bit loads or two 512-bit loads per cycle — out of a 48 KB L1 data cache (up from 32 KB) at 5 cycles of latency, behind a 192-entry load queue and a 114-entry store queue (up from 128/72); the data TLB grew to 96 entries, the fill buffer to 16, page walkers doubled from 2 to 4, and the core can now track 48 simultaneous L2 misses (up from 32). The server variant adds AMX, a matrix engine doing 2,048 int8 operations per cycle — 8× the AVX-512 VNNI rate — and a 2 MB private L2 (1.25 MB on client).
+
+**Trace — one unit of work: a 256-bit vector load feeding a floating-point add (VADDPS ymm).**
+1. **Allocate.** The load and the add each take a slot in the 512-entry ROB and are renamed against the 332-entry vector register file; the load also takes an entry in the 192-entry load queue.
+2. **Address generation.** The load dispatches to one of the three load AGUs (ports 2, 3 or 11), which computes the address; the 96-entry data TLB translates it.
+3. **L1D hit.** The 48 KB L1 data cache returns 32 bytes in 5 cycles — up to three such 256-bit loads can be in flight per cycle.
+4. **FADD fires.** When the loaded operand is ready, the unified scheduler issues the add to the fast adder on port 1; the result is ready in 3 cycles, and a chained add can use the 2-cycle bypass.
+5. **Writeback and retire.** The result lands in the vector register file and forwards over the bypass network to any waiting dependent; both µops retire in program order from the ROB.
+
+**Bottleneck in / out.** Relieves the execution-width and memory-parallelism walls: 12 ports, five ALUs, three load AGUs and a 512-entry window let the core sustain 6-wide issue and keep working through cache misses — by Little's Law the 512-entry ROB covers even the 74-cycle L3 latency at 6 IPC (444 entries needed), which is why the huge ROB exists. Creates a lopsided window instead: the integer register file did not grow, so integer-heavy code runs out of integer registers (248 usable) before the ROB fills, and the 205-entry scheduler — up only 28% while the ROB grew 45% — is the tighter ceiling on how many µops can actually wait for execution. And the bandwidth came with latency: every cache level is slower than Zen 3's (L1D 5 vs 4 cycles, L2 14 vs 12, L3 74 vs 54), so the big ROB is partly paying for the core's own cache latency.
+
+**Governing numbers.** Allocate 6 µops/cycle; ROB 512 entries (Sunny Cove: 352); unified scheduler 205 entries total (measured); integer register file 280 (248 usable + 32, unchanged), vector/FP register file 332 (from 224); branch order buffer 128 (from 96); execution ports 12 (from 10); integer ALUs 5, all with single-cycle LEA; load AGUs 3, store AGUs 2; FADD latency 3 cycles, bypass 2 cycles; FP multiply latency 4 cycles (measured); load queue 192, store queue 114; L1D 48 KB, 5-cycle latency, 3× 256-bit loads/cycle; L2 1.25 MB client / 2 MB server, 14-cycle latency; L3 74 cycles; DTLB 96 entries; page walkers 4 (from 2); outstanding L2 misses 48 (from 32); AMX 2,048 int8 ops/cycle (server).
+
+**Primary source.** Intel Architecture Day 2021, as reported by WikiChip Fuse, "Intel Details Golden Cove" (August 2021) and Tom's Hardware, "Intel Architecture Day 2021" (August 2021); independent measurement: Chips and Cheese, "Popping the Hood on Golden Cove" (December 2021), including its measured ROB/scheduler/register-file capacity table and Little's Law analysis.
+
+### Arm Neoverse V2
+
+#### Inside the signature block: The MOP-cache front end — 1,536-entry L0 MOP cache, 6-wide decode and the TAGE predictor
+
+**Inside it.** The front end exists to keep a 6-wide out-of-order back end fed without paying the power cost of decoding every instruction every time, and it is the most reworked part of the X3-generation design V2 inherits. The dynamic branch predictor steers fetch: Arm doubled the TAGE tables and made the branch-target buffers ten times larger than in V1, doubled the fetch-queue size, and doubled instruction-TLB and cache bandwidth. Fetch reads a 64 KB, 4-way set-associative L1 instruction cache with 64-byte lines, behind a fully associative L1 instruction TLB covering 4 KB, 16 KB, 64 KB and 2 MB pages. Two supply paths feed the rename stage. The cold path is six AArch64 decoders cracking instructions into internal macro-ops (MOPs). The hot path is the L0 macro-op cache: a 1,536-entry, 4-way skewed-associative store of already-decoded, already-optimised MOPs — on a hit, a loop's MOPs skip decode and the L1I entirely and flow straight to the 8-wide rename/dispatch stage. Dispatch feeds a 320-entry reorder buffer through per-class issue queues. Arm's own accounting for the whole front-end rework: 13% higher SPECspeed 2017 integer performance and 10.5% fewer system-level cache misses than V1.
+
+**Trace — one unit of work: one instruction in a hot loop, already warm in the MOP cache.**
+1. **Predict.** The TAGE predictor and the enlarged branch-target buffer predict the loop-back branch; the fetch address is formed.
+2. **MOP-cache hit.** The address hits the 1,536-entry MOP cache; the loop's decoded MOPs flow out to rename/dispatch — no decode, no L1I access.
+3. **Rename & dispatch.** MOPs are renamed against the physical register file and dispatched up to 8 per cycle into the per-class issue queues; each takes a slot in the 320-entry reorder buffer.
+4. **Issue & execute.** When operands land, the issue queues fire the MOPs to the execution pipes — integer, load/store, or the four 128-bit SVE2 pipes.
+5. **Miss path.** On a MOP-cache miss the same address fetches from the 64 KB L1I and the six decoders crack the AArch64 bytes into MOPs, filling the MOP cache so the next loop iteration takes the fast path.
+
+**Bottleneck in / out.** Relieves the decode wall: six decoders alone could not sustain 8-wide dispatch, and decoding every iteration of a hot loop burns power for identical work — the MOP cache lets the front end feed the back end while the decoders sit idle. Creates two new ceilings instead: the MOP cache itself shrank by half from the X2 generation (3,072 entries to 1,536), so loops larger than about 1.5K MOPs spill back onto the decode path; and a wider machine raises the cost of a mispredict, which now flushes a 320-entry in-flight window — which is why the predictor hardware (TAGE tables, branch-target buffers) grew so much faster than the decoders.
+
+**Governing numbers.** MOP cache 1,536 entries, 4-way skewed associative (X2: 3,072); L1I 64 KB, 4-way, 64-byte lines; L1 I-TLB fully associative (4 KB / 16 KB / 64 KB / 2 MB); decode 6-wide; rename/dispatch 8-wide; ROB 320 entries; vs V1: branch-target buffers 10× larger, TAGE tables 2×, fetch queue 2×, instruction-TLB/cache bandwidth 2×; +13% SPECspeed 2017 integer, −10.5% system-level cache misses vs V1.
+
+**Primary source.** Arm, Arm Neoverse V2 Core Technical Reference Manual, doc 102375_0001_02_en, Issue 02 (L1 instruction memory system; register rename; instruction issue); Arm Community blog, "Arm Neoverse V2 Platform — Best-in-class cloud and AI/ML performance" (Hot Chips 2023); Wikipedia, "ARM Cortex-X3" (decode width, rename/dispatch width, ROB, MOP-cache size — the X3-generation design V2 inherits, citing Arm/AnandTech).
+
+#### Inside the signature block: The platform fabric — CPU bridge, DSU-110 and the CMN-700 mesh with its distributed system cache
+
+**Inside it.** This is the block the entry's special piece hangs on: V2 is sold as a Compute Subsystem, and the fabric is the subsystem. Each core exits through its own asynchronous CPU bridge — one bridge per core, buffering and synchronising between the core clock domain and the cluster — into the DSU-110, which manages all of the core's external interfaces to the SoC. In Arm's CSS reference platform the DSU-110 hangs off the CMN-700 coherent mesh: a two-dimensional grid of mesh crosspoints (XPs) that route packets, configurable up to a 12×12 mesh, with home nodes (HN-F) that each carry a slice of the distributed system-level cache plus an integrated point-of-serialisation and point-of-coherency, and a snoop filter tracking which cores hold which lines — up to 128 HN-Fs, 0–512 MB of system cache in total, and up to 1,024 MB of snoop-filter tag RAM. Requests and responses travel on separate 256-bit data channels, with an optional dual-channel configuration. The one big fork in the story: NVIDIA's Grace does not use this fabric at all — its 72 V2 cores hang off NVIDIA's own Scalable Coherency Fabric, a mesh with a distributed cache delivering 3.2 TB/s of bisection bandwidth, because Grace's single-NUMA-node, LPDDR5X design wanted its own coherency fabric. Same core, two fabrics — the platform, not the core, decides the memory system.
+
+**Trace — one unit of work: one L2 miss on the Arm CSS path.**
+1. **L2 miss.** A load misses the core's private 1 MB (or 2 MB) L2 and the request is handed to the CPU bridge.
+2. **Clock-domain crossing.** The asynchronous CPU bridge buffers the request and synchronises it into the DSU-110/cluster domain.
+3. **Mesh transit.** The DSU-110 injects the request into the CMN-700 mesh; it hops crosspoint to crosspoint toward the home node that owns the address.
+4. **Home node decides.** The HN-F — the point of serialisation and coherency for that address — checks its slice of the distributed system cache and consults the snoop filter for sharers.
+5. **Hit or memory.** On a system-cache hit the data returns along the mesh; on a miss the HN-F forwards the request to the memory controller (DDR5 or LPDDR5X) and the line is filled into the cache slice on its way back to the core.
+
+**Bottleneck in / out.** Relieves the many-core coherence wall: a single shared bus or a central cache could never serve 72–256 cores, so coherence is distributed — every address has a home node, every HN-F owns a cache slice, and the snoop filter means most requests never broadcast. Creates a fabric wall instead: hop latency grows with mesh size, a badly hashed address range can hot-spot one HN-F slice, and the mesh — not the core — becomes the limiter on cross-core traffic, which is why Arm offers the dual 256-bit data channels and why NVIDIA replaced the fabric entirely with SCF for Grace. The 10.5% cut in system-level cache misses Arm reports for V2 versus V1 is the payoff for the bigger front end and the deeper system cache working together.
+
+**Governing numbers.** Mesh up to 12×12 (144 crosspoints); up to 256 cores per die, 512 per system; system cache 0–512 MB total across up to 128 HN-Fs; snoop-filter tag RAM up to 1,024 MB; data channels 256-bit, single or dual; Arm launch claim: up to 4 TB/s across the CMN mesh; Grace: 72 cores, 1 MB L2 per core, 114 MB L3, SCF 3.2 TB/s bisection, NVLink-C2C 900 GB/s to the second die.
+
+**Primary source.** Arm, Arm Neoverse V2 Core Technical Reference Manual, doc 102375_0001_02_en (L2 memory system; CPU bridge; DSU-110 interfaces); Arm, Arm Neoverse CMN-700 Coherent Mesh Network Technical Reference Manual, doc 102308_0307_08_en, Issue 08 (Features §2.3); NVIDIA, "NVIDIA Grace CPU" product page (72 cores, SCF 3.2 TB/s bisection, spec table: 1 MB L2 per core, 114 MB L3, NVLink-C2C 900 GB/s); NVIDIA Developer Blog, "NVIDIA Grace Hopper Superchip Architecture In-Depth" (117 MB L3 figure — see the disputed fact record).
+
+### Arm Cortex-X4
+
+#### Inside the signature block: The 10-wide decode front end — eight decoders, no MOP cache
+
+**Inside it.** The front end exists to feed a 10-wide rename/dispatch stage, and X4's answer to that problem is the generation's most argued-about decision: delete the macro-op cache entirely. Fetch starts at a rebuilt instruction-fetch unit with a dynamic branch predictor, feeding a 64 KB, 4-way set-associative L1 instruction cache with 64-byte lines, behind a fully associative L1 instruction TLB with native support for 4 KB, 16 KB, 64 KB and 2 MB pages. Arm says it redesigned the single-instruction cache, folding the old MOP-cache approach into it with additional fused instructions, and tuned the front end for applications with large instruction footprints — the branchy, unpredictable phone code that dominates real workloads rather than synthetic loops. Behind the cache sit eight parallel decoders that crack fixed-length AArch64 instructions into internal macro-ops (MOPs); because some instructions crack into two MOPs, eight decoders feed up to 10 MOPs per cycle into rename and dispatch. The 1,536-entry MOP cache that X3 carried is gone — zero entries — so there is no cache-hit/cache-miss timing split anywhere in the front end: every instruction takes the same decode path, and the pipeline is a uniform 10 stages with a uniform 10-cycle mispredict penalty. That uniformity is only buildable because AArch64 instructions are fixed-length — there is no variable-length pre-decode stage to widen — which is the same reason the entry's special piece calls the ISA itself the front-end technology.
+
+**Trace — one unit of work: one instruction in a hot loop, steady state.**
+1. **Predict.** The dynamic branch predictor predicts the loop-back branch; the fetch address is formed.
+2. **Fetch.** The 64 KB L1 instruction cache delivers the 4-byte instruction; the fully associative I-TLB has already translated the page, so the hot path never waits on translation.
+3. **Decode.** One of the eight decoders cracks the instruction into MOP(s); a complex instruction can crack into two, which is how eight decoders sustain 10-wide dispatch.
+4. **Rename & dispatch.** MOPs are renamed and dispatched up to 10 per cycle into the per-class issue queues; each takes a slot in the 384-entry reorder buffer.
+5. **Execute & retire.** The issue queues fire the MOPs to the 21 execution ports; results return and the ROB retires instructions in order.
+
+**Bottleneck in / out.** Relieves the decode wall and the MOP-cache timing split: X3's front end was 6-wide decode / 8-wide dispatch behind a 1,536-entry cache with two different latencies depending on hit or miss; X4 has one uniform path at twice the dispatch width. Creates two new ceilings instead: every iteration of a hot loop now re-decodes from scratch — the MOP cache's power and throughput saving is gone, paid in decoder toggles on every pass — and eight decoders plus 10-wide rename cost area and power, about 10% more core area than X3 at equal cache. A wider machine also makes a mispredict more expensive, flushing a 384-entry in-flight window, which is why the predictor and the fetch unit were rebuilt for large instruction footprints rather than benchmark loops.
+
+**Governing numbers.** 8 decoders; rename/dispatch 10 MOPs per cycle (X3: 6-wide decode / 8-wide dispatch); MOP cache 0 entries (X3: 1,536); ROB 384 entries, 768 MOPs in flight with fused pairs (X3: 320 / 640); L1I 64 KB, 4-way, 64-byte lines; L1 I-TLB fully associative (4 KB / 16 KB / 64 KB / 2 MB); pipeline 10 stages; mispredict penalty 10 cycles.
+
+**Primary source.** Arm, Arm Cortex-X4 Core Technical Reference Manual, doc 102484_0002_05_en, Issue 05 (Technical overview — L1 instruction memory system; Instruction decode; Register rename; Instruction issue); Wikipedia, "ARM Cortex-X4" (decode width, rename/dispatch width, ROB, MOP-cache removal — citing WikiChip Fuse, Arm Community and AnandTech); HWCooling, "ARM unveils record-breaking Cortex-X4 core with eight ALUs" (eight decoders, 10-cycle penalty); Android Authority, "Arm Cortex-X4, A720, and A520: 2024 smartphone CPUs deep dive" (redesigned instruction cache, fused instructions, large-footprint tuning).
+
+#### Inside the signature block: The 21-port back end — eight integer ALUs and the 384-entry window
+
+**Inside it.** The back end is where X4 spent its new width: 21 execution ports, up from 15 in X3. The integer cluster is the headline — eight ALUs (six simple single-cycle ALUs, one ALU/MAC and one ALU/MAC/DIV), up from six, with the old MUL unit upgraded to a full MAC so the core now has two integer MAC units where X3 had one; three branch units, up from two; and four address-generation units, up from three, after Arm split one load/store unit into dedicated load and store pipes so the core can sustain up to four memory operations per cycle. Behind them sits the 384-entry reorder buffer — a 768-MOP in-flight window when fused pairs are counted, up from 640 — fed by the 10-wide rename/dispatch stage through per-class issue queues. The vector side deliberately did not widen: the four 128-bit NEON/SVE2 pipes are unchanged from X3 (configurable as 2×128 or 4×128 at build time), though floating-point divide and square root are now pipelined. The memory system around the back end is new L1 temporal data prefetching, an optional doubling of the L1 data TLB, and a private L2 that doubles to a 2 MB option with no added latency — the L2 is private to the core, 8-way set associative, configurable at 512 KB, 1 MB or 2 MB, and reaches the DSU-120 cluster through an asynchronous CPU bridge. The DSU-120 takes up to 14 cores per cluster with up to 32 MB of shared L3.
+
+**Trace — one unit of work: one integer multiply-accumulate instruction.**
+1. **Dispatch.** The renamed MOP enters the integer issue queue and takes a slot in the 384-entry ROB.
+2. **Wait.** The queue watches for its operands — register-ready, or a forwarded result from an earlier ALU.
+3. **Fire.** The MOP issues to one of the two MAC-capable ALU ports; the multi-cycle MAC executes while the six simple ALUs keep taking single-cycle work around it.
+4. **Broadcast.** The result returns to the ROB and wakes dependent MOPs waiting in the issue queues.
+5. **Commit.** The instruction retires in order from the ROB; up to 768 MOPs may be in flight behind it.
+
+**Bottleneck in / out.** Relieves scalar throughput: integer-heavy phone code — address arithmetic, loop control, UI work — now has eight ALUs, three branch units and four memory ops per cycle instead of six, two and three. Creates the vector imbalance instead: FP/SIMD-heavy code gains little, because the four 128-bit pipes are exactly where X3 left them, so the widening is a scalar bet. And the 768-MOP window means a mispredict or a long-latency load stalls a much bigger in-flight set than X3's 640 — which is why the back end grew a temporal prefetcher, a doubled D-TLB option and a 2 MB L2: the window is only useful if the memory system keeps it fed. Arm's accounting for the whole widening: 13% IPC uplift over X3 at the same process, clock and L3, 15% higher peak performance at 3.4 GHz, and up to 40% lower power at the same performance point.
+
+**Governing numbers.** 21 execution ports (X3: 15); 8 integer ALUs — 6 simple + ALU/MAC + ALU/MAC/DIV (X3: 6, one MAC); 3 branch units (X3: 2); 4 AGUs, up to 4 memory ops per cycle (X3: 3); ROB 384 entries / 768 MOPs in flight (X3: 320 / 640); vector 4×128-bit NEON/SVE2 (2×128 config option); L1D 64 KB, 4-way, 64-byte lines; L1 D-TLB fully associative (4 KB / 16 KB / 64 KB, 2 MB / 512 MB blocks); L2 private, 8-way, 512 KB / 1 MB / 2 MB; DSU-120: up to 14 cores, L3 up to 32 MB; +13% IPC ISO-process, +15% peak performance at 3.4 GHz, up to 40% lower power at the same performance.
+
+**Primary source.** Arm, Arm Cortex-X4 Core Technical Reference Manual, doc 102484_0002_05_en, Issue 05 (Technical overview — L1 data memory system; L2 memory system; Vector execute; configuration options); Wikipedia, "ARM Cortex-X4" (execution ports, ROB, DSU-120, performance claims — citing WikiChip Fuse, Arm Community and AnandTech); Android Authority, "Arm Cortex-X4, A720, and A520: 2024 smartphone CPUs deep dive" (ALU/branch table, 768-MOP window, load/store split, temporal prefetcher, DSU-120 power modes); HWCooling, "ARM unveils record-breaking Cortex-X4 core with eight ALUs" (ALU split, AGU count).
+
+### IBM POWER10
+
+#### Inside the signature block: The eight-slice execution engine — 512-entry instruction table feeding eight slices
+
+**Inside it.** The SMT8 core is two SMT4 halves side by side. Each half has its own 48 KB L1 instruction cache and 32 KB L1 data cache and four 128-bit execution slices; the whole core has eight slices, a private 2 MB L2, an 8 MB region of the 120 MB on-die L3, and a 4,096-entry TLB. Each slice is a self-contained engine: an ALU, an FPU, a branch unit, a load-store unit and a 128-bit VSX SIMD unit, holding up to 20 in-flight instructions. All eight slices are fed from one shared 512-entry instruction table, backed by a 128-entry load queue and an 80-entry store queue (halved per thread when all eight threads run). The front end is the Instruction Fetch Unit (IFU): it fetches, decodes and dispatches every instruction — including 64-bit prefixed instructions and MMA instructions — into the table. Branch prediction accuracy roughly doubled over POWER9, which matters because the table is a 512-entry in-flight window: a mispredict flushes a lot of work. The design point: four vector pipelines per core plus the slice array, aimed at ~30% more core-level throughput than POWER9 at the same clock, and 2.6× the core-level energy efficiency on SPECint.
+
+**Trace — one unit of work: one integer add instruction, steady state.**
+1. **Fetch.** The IFU fetches the instruction from the thread's half's 48 KB L1 instruction cache; the I-TLB has already translated the page.
+2. **Decode & dispatch.** The instruction is decoded (prefix/fuse handling for 64-bit prefixed forms) and dispatched into the shared 512-entry instruction table, taking one entry.
+3. **Wait.** The instruction sits in the table until its operands are ready — register-ready, or a forwarded result from an earlier slice execution.
+4. **Issue.** When operands are ready and a slice has a free slot (at most 20 in flight per slice), the instruction issues to one of the eight slices.
+5. **Execute.** The slice's ALU runs the add; a load would instead go through the 128-entry load queue to the 32 KB L1 data cache, a store through the 80-entry store queue.
+6. **Writeback & complete.** The result is written back and wakes dependent instructions waiting in the table; the instruction completes in program order.
+
+**Bottleneck in / out.** Relieves POWER9's issue bottleneck: eight slices fed by a 512-entry window keep eight SMT threads' work flowing where a narrower core stalled on issue. Creates the shared-table ceiling instead: at full SMT8 all eight threads contend for the same 512 table entries, the same eight slices and the same load/store queues, so per-thread IPC falls as threads are added; and the table's wakeup/select logic is a centralized power and area cost that grows with the window — the reason the per-slice cap is 20 in flight, not unlimited. A long-latency load stalls its slice's 20 slots behind it, which is why the core grew a 2 MB private L2 and a 4,096-entry TLB: the window is only useful if the memory system keeps it fed.
+
+**Governing numbers.** 8 slices (4 per SMT4 half); 512-entry shared instruction table; 20 in-flight instructions per slice; load queue 128 entries / store queue 80 entries (64 / 40 single-threaded); L1I 2×48 KB, L1D 2×32 KB; L2 2 MB private per core; L3 region 8 MB per core, 120 MB per die; TLB 4,096 entries; branch prediction accuracy ~2× POWER9; +30% core-level throughput vs POWER9 at equal clock, 3× at socket level (IEEE Micro); 2.6× core-level energy efficiency on SPECint, up to 3× at socket (ISCA 2021, projected).
+
+**Primary source.** Starke, Thompto, Stuecheli & Moreira, "IBM's POWER10 Processor", IEEE Micro 41(2), 7–14 (2021), DOI 10.1109/MM.2021.3058632; Starke & Thompto, "IBM's POWER10 Processor", Hot Chips 32 (2020), DOI 10.1109/HCS49909.2020.9220618; Qiu et al., "Energy Efficiency Boost in the AI-Infused POWER10 Processor", ISCA 2021; Wikipedia, "Power10" (512-entry table, 20 per slice, 128/80 queues — citing the Hot Chips 32 deck); IT Jungle, "Drilling Down Into The Power10 Chip Architecture" (Aug 24, 2020) (two SMT4 halves, four slices and 48 KB I-cache / 32 KB D-cache per half).
+
+#### Inside the signature block: The Matrix Math Engine — four MMA units, eight 512-bit accumulators
+
+**Inside it.** Four Matrix Math Engines (MME) per SMT8 core execute Power ISA 3.1's Matrix-Multiply Assist (MMA) instructions. The MMA facility adds eight 512-bit accumulator registers, ACC[0:7]; each holds a 4×4 matrix of FP32, a 4×2 matrix of FP64, or a 4×4 matrix of INT32 elements. Each accumulator is associated with a group of four 128-bit vector-scalar registers (VSR[0:31]); while an accumulator is in use its four VSRs must not be used, while VSR[32:63] are never associated with an accumulator and stay free. The accumulators live inside the MME functional unit itself, not in the register file — IBM's stated reason is that keeping the partial sums in the unit significantly reduces switching power. MMA instructions are fetched, decoded and dispatched by the IFU like any other instruction and can overlap fully with other execution in the out-of-order core. The operation is a rank-k update: A ← A + X·Yᵀ, an outer product. For FP64, xvf64ger updates a 4×2 accumulator from a 4-element and a 2-element vector (8 fused multiply-adds, 16 FLOPs); for INT4, xvi4ger8 updates a 4×4 INT32 accumulator from two 4×8 matrices (128 multiply-accumulates, 256 ops). Four engines × 512 result bits = 2,048 result bits per cycle: 64 FP64 FLOPs per cycle, up to ~1,024 INT4 ops per cycle per core. Data types span FP64, FP32, FP16, BF16, INT16, INT8 and INT4.
+
+**Trace — one unit of work: one xvf64ger double-precision outer product through the MME.**
+1. **Prime.** xxsetaccz zeroes ACC0 (or xxmtacc assembles it from four VSRs); ACC0 is now primed and its four backing VSRs are locked out until it is deprimed.
+2. **Fetch, decode, dispatch.** The IFU fetches the xvf64ger instruction like any other and dispatches it into the 512-entry instruction table.
+3. **Wait & issue.** When the two 128-bit operand VSRs (one 4-element, one 2-element FP64 vector) are ready, the instruction issues to one of the four MMEs.
+4. **Outer product.** The MME computes A ← A + X·Yᵀ: the 4×2 outer product, 8 fused multiply-adds, added into ACC0 in place — 16 FLOPs from one instruction.
+5. **Stay in the unit.** The partial sum never leaves the MME: the next ger in the K-loop accumulates into the same ACC0, so a whole K-slice of the GEMM runs without a register-file write.
+6. **Drain.** When the tile is done, xxmfacc moves ACC0 back into its four VSRs (or a paired store writes it to memory); the VSR group is free for reuse.
+
+**Bottleneck in / out.** Relieves the BLAS3 wall: one ger instruction replaces a loop of vector FMAs and the register traffic that went with them — 4× the per-core matrix performance of POWER9 at constant frequency, and 10–20× the socket throughput on matrix-intensive work. Creates the accumulator ceiling instead: only eight accumulators, so a GEMM kernel can keep at most eight 4×4/4×2 tiles live, and each live accumulator locks out four VSRs, so accumulator pressure and VSR starvation bound tile size and unrolling. The four MMEs are shared across eight SMT threads, so a second thread's MMA stream halves the per-thread rate; and because the engine is in-core, peak matrix rate is bounded by the core's issue bandwidth and the L1/L2 feed, not by a separate accelerator's memory.
+
+**Governing numbers.** 4 MME units per core; 8 accumulators × 512 bits; accumulator shapes 4×4 FP32 / 4×2 FP64 / 4×4 INT32; 64 VSRs × 128 bits — VSR[0:31] in four-register accumulator groups, VSR[32:63] always free; 2,048 matrix-result bits per cycle; 64 FP64 FLOPs/cycle per core; ~1,024 INT4 ops/cycle per core; 4× per-core matrix performance vs POWER9 at constant frequency; 10–20× matrix-intensive socket throughput vs POWER9; projected 10× FP32 / 21× INT8 socket AI performance on ResNet-50 and BERT-Large.
+
+**Primary source.** Moreira et al., "A matrix math facility for Power ISA™ processors", arXiv:2104.03142 (April 2021); IBM, "Matrix-Multiply Assist Best Practices Guide", Redpaper REDP-5612-00 (April 2021); HPCwire, "IBM Debuts Power10" (Aug 18, 2020) (Thompto's 64 FP64 FLOPs/cycle and ~1K reduced-precision ops/cycle figures); Starke et al., IEEE Micro 41(2) (10–20× matrix-intensive); Qiu et al., ISCA 2021 (10× FP32 / 21× INT8 projections).
+
+### SiFive Performance P670
+
+#### Inside the signature block: The 4-wide rename/dispatch fabric — 160-entry ROB, four dispatch buffers, nine issue queues
+
+**Inside it.** SiFive's own pipeline-overview diagram (launch, November 2022) shows the out-of-order heart as a widened P550 descendant: a front end that fetches up to 8 instructions per cycle from a 32 KB instruction cache, steered by a branch predictor built from four named pieces — a Next Line Predictor, a Branch Direction Predictor, a Return Address Stack and an Indirect Jump Target Predictor. Decode, rename and dispatch run 4-wide into a 160-entry reorder buffer, with rename pools sized per register class: 208 integer renames, 208 floating-point renames and 2×64 vector renames. From there the machine fans out through four dispatch buffers — Integer, Load/Store, Floating Point, Vector — each feeding its own cluster's issue queues: four 16-entry queues in the integer cluster, one 24-entry queue in the load/store cluster, two 16-entry queues in the floating-point cluster and two 16-entry queues in the vector cluster — 152 issue-queue entries in total. The integer cluster has two ALUs and two branch units, with MUL, DIV and int-to-float conversion sitting under the first ALU; the load/store cluster has two address-generation units over two load/store pipes, a 24-entry issue queue fed by two inlets, prefetchers and a 32 KB data cache; the floating-point cluster has two FMAC, two FADD and two FMUL pipes plus int-to-float and FP divide; the vector cluster has two 128-bit ALUs plus DIV and a vector-to-scalar unit. Behind all of it sits a private L2 of up to 512 KB per core and a shared L3 of up to 16 MB, linked at 32 bytes per cycle — the same 32 B/cycle width feeds the instruction cache, the L2-to-L3 link and the data-cache-to-L2 link. SiFive publishes no details beyond the diagram — no load/store queue depths, no branch-predictor table sizes, no cache latencies — and this section stops where the diagram does.
+
+**Trace — one unit of work: one integer ADD, steady state.**
+1. **Predict.** The Next Line Predictor and Branch Direction Predictor (with the Return Address Stack covering returns and the Indirect Jump Target Predictor covering indirect jumps) form the fetch address.
+2. **Fetch.** Up to 8 instructions stream out of the 32 KB instruction cache in one cycle — twice the 4-wide decode rate, so the fetch buffer absorbs short fetch stalls.
+3. **Decode, rename, dispatch.** The ADD is decoded in the 4-wide front end, its architectural registers are renamed against the 208-entry integer rename pool, and it takes a slot in the 160-entry reorder buffer.
+4. **Dispatch buffer.** The renamed instruction is routed to the Integer Dispatch Buffer.
+5. **Wait.** It sits in one of the four 16-entry integer issue queues until its operands are ready — register-ready, or a forwarded result from an earlier ALU.
+6. **Fire.** The queue issues it to one of the two ALUs; a multiply, divide or int-to-float op would instead take the MUL/DIV/I2F path under the first ALU.
+7. **Writeback and retire.** The result broadcasts back, wakes dependent instructions waiting in the issue queues, and the ADD retires in program order from the ROB.
+
+**Bottleneck in / out.** Relieves the P550's 3-wide ceiling: SiFive widened the whole core to four instructions per cycle and enlarged the buffers throughout, so the front end can sustain 4-wide issue where the P550 capped at three. Creates the 160-entry ceiling instead: the reorder buffer is the in-flight window, modest beside Cortex-X4's 384 entries, so a mispredict flushes up to 160 instructions and a long-latency load stalls the window behind it — which is why the core grew a private L2 with a streaming prefetcher and cache stashing to L3. And the front end is deliberately asymmetric — it fetches 8 per cycle but decodes 4 — so decode, not fetch, is the sustained throughput cap; the fetch margin exists to refill the window fast after a redirect.
+
+**Governing numbers.** Fetch up to 8 instructions/cycle; I-cache 32 KB; decode/rename/dispatch 4-wide; ROB 160 entries; rename pools 208 integer / 208 FP / 2×64 vector; issue queues 4×16 integer, 1×24 load/store, 2×16 FP, 2×16 vector (152 entries total); integer cluster 2 ALU + 2 branch; load/store 2 AGU, 2 LD/ST pipes, D-cache 32 KB; private L2 up to 512 KB; shared L3 up to 16 MB; links 32 B/cycle; pipeline 13 stages; over 3.4 GHz at 5 nm; over 13 SpecINT2k6/GHz (SiFive's current P600 page; the launch figure was over 12).
+
+**Primary source.** SiFive, "SiFive Performance P670 detailed pipeline overview" diagram (November 2022, via CNX Software); SiFive, Performance P670 product brief, rev 1.0 (2025); SiFive, Performance P600 Series product page (sifive.com/cores/performance-p600).
+
+#### Inside the signature block: The dual 128-bit vector cluster — two ALUs, DLEN = VLEN
+
+**Inside it.** The vector cluster is the piece that makes the P670 a different core from its sibling the P650, which is the same scalar machine with the vector unit deleted. The brief specifies it precisely: two 128-bit vector ALUs, DLEN = VLEN — the datapath width equals the architectural vector length of 128 bits — implementing the ratified RISC-V Vector v1.0 specification with vector-length-agnostic operation and dynamic runtime setting of vector lengths, across INT8/16/32/64 and FP16/32/64, plus the vector cryptography extensions (the first RISC-V vector crypto on the market, per SiFive's launch release). The cluster is fed by its own Vector Dispatch Buffer and two 16-entry issue queues, one per ALU, with a DIV unit and a V2S (vector-to-scalar) unit beside the ALUs. Because DLEN equals VLEN, one vector instruction on a full 128-bit register is one pass through one ALU — 16 INT8 lanes, 8 INT16, 4 INT32/FP32, or 2 INT64/FP64 per cycle per ALU — and the two ALUs let two independent vector instructions execute in the same cycle. The vector registers are renamed from a dedicated 2×64-entry pool, separate from the scalar rename pools. What SiFive does not publish: the vector register file's port counts, the DIV latency, and how vector loads move through the load/store cluster — the diagram shows the structure, not the cycle counts.
+
+**Trace — one unit of work: one vector add, `vadd.vv v0, v1, v2`, 16 INT8 elements, VLEN = 128.**
+1. **Decode and rename.** The instruction is decoded in the 4-wide front end; its vector registers are renamed against the 2×64 vector rename pool, and the current vl/vtype setting (set dynamically at runtime) is attached to the instruction.
+2. **Dispatch.** It is routed to the Vector Dispatch Buffer.
+3. **Wait.** It sits in one of the two 16-entry vector issue queues until v1 and v2 are ready.
+4. **Fire.** The queue issues it to one of the two 128-bit vector ALUs; all 16 INT8 lanes are added in a single pass, because the 128-bit datapath matches the 128-bit vector length.
+5. **Dual issue.** In the same cycle the second ALU can take an independent vector instruction from the other issue queue — two vector ops per cycle, not one wide one.
+6. **Writeback and retire.** The 128-bit result lands in the vector register file, wakes dependent vector ops, and the instruction retires in program order from the 160-entry ROB. A vector divide would instead take the DIV path; a move of a vector element to a scalar register takes the V2S path.
+
+**Bottleneck in / out.** Relieves the P650's missing-vector gap: AI/ML, media and DSP work that needed a separate accelerator or scalar loops now runs on the core itself, with vector crypto in the same unit — the reason SiFive positions the P670 against the Cortex-A78 for wearables, robotics and networking. Creates the 128-bit width wall instead: with DLEN = VLEN = 128, wider vectors (via LMUL register grouping) cost multiple passes, and a 256-bit-equivalent operation takes two cycles where a 256-bit datapath would take one. And the vector unit shares the scalar machine's oxygen — the 4-wide front end, the 160-entry ROB and the load/store cluster — so a vector-heavy stream competes with scalar work for dispatch slots and for the two load/store pipes feeding it; the streaming prefetcher and cache stashing to L3 exist to keep those pipes from starving.
+
+**Governing numbers.** 2× 128-bit vector ALUs; DLEN = VLEN = 128 bits; vector issue queues 2×16 entries; vector rename pool 2×64; per-cycle per-ALU throughput 16× INT8 / 8× INT16 / 4× INT32 or FP32 / 2× INT64 or FP64 lanes; datatypes INT8–64, FP16/32/64; RVV 1.0 + vector crypto; private L2 up to 512 KB, shared L3 up to 16 MB.
+
+**Primary source.** SiFive, Performance P670 product brief, rev 1.0 (2025) ("2x128-bit ALU, DLEN = VLEN"; datatype list); SiFive, "SiFive Performance P670 detailed pipeline overview" diagram (November 2022, via CNX Software); SiFive press release, "SiFive's New High-Performance Processors Offer a Significant Upgrade for Wearable and Consumer Products" (November 1, 2022).
+
+---
+
+## Basic blocks primer — the primitives (2026-11-22)
+
+The shared Level-3 vocabulary of the zoo: the fundamental circuit primitives every signature block is built from, defined once so entries point here instead of re-defining them. Each primitive: what it is and what it does, its key parameters, the trade-offs in choosing it, and where it typically appears in real chips.
+
+### FIFO / queue (Queueing & flow)
+
+**What it is.** A first-in-first-out buffer: data enters one end and leaves the other, in order. It decouples a producer and a consumer that run at different rates or in bursts, absorbing jitter so neither stalls the other.
+
+**Key parameters.** Depth (entries) × width (bits); almost-full / almost-empty thresholds; synchronous vs asynchronous (dual-clock) ports.
+
+**Trade-offs.** Depth costs SRAM or flops plus latency — too shallow and the producer stalls (or packets drop); too deep and you pay area for buffering you rarely use. Async FIFOs add synchronizer latency on their flags.
+
+**Appears in.** Everywhere data crosses a rate boundary: NoC routers, PCIe/DMA engines, GPU command queues, switch ingress, UARTs.
+
+### Credit counter (Queueing & flow)
+
+**What it is.** Flow control as accounting: the sender keeps a counter of free slots in the receiver's buffer, spends one credit per flit sent, and earns credits back as the receiver drains. At zero, sending stops — losslessness by arithmetic, no drops, no retransmits.
+
+**Key parameters.** Credit count (= the receiver buffer depth it mirrors); flit width; credit return latency (the round trip sets the minimum useful buffer depth); one counter per virtual channel.
+
+**Trade-offs.** Buffers must cover the credit round-trip latency or links idle waiting for credits; per-VC counters multiply state. The alternative — drop and retry — trades this state for loss-recovery complexity.
+
+**Appears in.** InfiniBand and NoC link flow control, PCIe / CXL flow control, on-chip router virtual channels, lossless Ethernet alternatives to PFC.
+
+### Mux / demux (Switching & selection)
+
+**What it is.** A multiplexer picks one of N inputs to drive one output under a select signal; a demux does the reverse, steering one input to one of N outputs. The mux is the atom of all data selection — every ‘choose’ in hardware is muxes.
+
+**Key parameters.** Radix (2:1, 4:1, N:1); data width; select encoding (binary vs one-hot).
+
+**Trade-offs.** Wide, high-radix muxes are trees of 2:1 muxes — delay grows with log(radix) and select fanout becomes the timing problem. One-hot selects are faster but cost select wires and decode area.
+
+**Appears in.** Operand bypass/forwarding in CPUs, ALU input select, register-file write steering, and the mux inside every scan flop.
+
+### Crossbar (Switching & selection)
+
+**What it is.** A full any-to-any switch: every input can reach every output in the same cycle, built as one output mux per output fed by all inputs, plus arbitration when two inputs want the same output.
+
+**Key parameters.** Radix N×M (inputs × outputs); data width per port; bisection bandwidth = ports × width × clock.
+
+**Trade-offs.** Cost grows as N×M — crosspoints and wiring explode quadratically, so big crossbars lose to buffered meshes and NoCs. At small radix nothing beats its one-cycle, no-buffering latency.
+
+**Appears in.** CPU bypass networks, NoC router internals, GPU interconnect at small radix, memory-controller scheduling fabrics.
+
+### Switch arbiter (Switching & selection)
+
+**What it is.** Decides which requester wins a shared resource each cycle — a crossbar output, a bus, a memory port. Round-robin, weighted, fixed-priority and matrix arbiters trade fairness against simplicity.
+
+**Key parameters.** Requester count; grant latency (combinational vs registered/pipelined); fairness policy; QoS weights.
+
+**Trade-offs.** A combinational arbiter sits on the critical path of everything it serves; pipelining the grant costs a cycle. Starvation-free policies cost state — pointers and counters per port.
+
+**Appears in.** NoC routers, shared-cache bank access, memory controllers, switch schedulers — Tomahawk 5's traffic manager is an arbiter running at 51.2 Tbps of aggregate demand.
+
+### Register file (Storage)
+
+**What it is.** A small, very fast array of registers with multiple read and write ports — the operand store instructions actually compute from. Built from flops/latches with a mux tree per read port, not from dense SRAM bitcells.
+
+**Key parameters.** Entries (depth) × width; read-port and write-port count; banking; the bypass/forwarding network attached to it.
+
+**Trade-offs.** Area and power grow roughly with ports × entries — each added read port adds a full mux tree per bit. Port count, not capacity, is what makes register files expensive; banking trades port count for bank conflicts.
+
+**Appears in.** CPU physical register files, GPU SM register files (256 KB per SM in Hopper), DSP accumulator files.
+
+### SRAM bank (Storage)
+
+**What it is.** One compiled SRAM macro: a dense bitcell array with row decoders, sense amplifiers and one or two ports. Big on-chip memories are many banks interleaved, so parallel accesses land in different banks instead of colliding.
+
+**Key parameters.** Capacity (rows × width); port style (1RW, 2RW, true dual-port); bank count and interleave granularity; access latency in cycles.
+
+**Trade-offs.** Single-port banks are densest but serialize reads against writes; more ports and banks buy bandwidth with area and bank-conflict stalls. SRAM is usually the largest single consumer of die area on an accelerator.
+
+**Appears in.** Caches, scratchpads (TPU VMEM, Cerebras per-core SRAM), packet buffers, and any FIFO too deep to build from flops.
+
+### CAM / TCAM (Storage)
+
+**What it is.** Content-addressable memory: instead of presenting an address, you present a key and every entry compares itself in parallel, returning the match and its index. TCAM adds a third state — ‘don't care’ — per bit, enabling masked and prefix matches.
+
+**Key parameters.** Entries × key width; match latency (usually one cycle); priority rule when several entries match; TCAM mask width.
+
+**Trade-offs.** Every entry burns compare power on every lookup — CAMs are the most power-hungry memory per bit in the zoo and stay small. Match-line timing caps both size and clock.
+
+**Appears in.** TLBs, cache tag arrays, out-of-order wakeup tag stores, switch/router forwarding and ACL tables, flow classification.
+
+### Adder tree (Arithmetic)
+
+**What it is.** A tree of adders reducing many terms to one sum in log2(N) levels — the reduction heart of dot products. Multipliers produce partial products; a compressor (Wallace/Dadda) tree crushes them first, then a final adder finishes.
+
+**Key parameters.** Number of inputs; input and output width (guard bits grow toward the root); tree depth in levels; pipelining between levels; compressor vs plain-adder style.
+
+**Trade-offs.** The root adder is the widest and slowest element; pipelining the tree adds latency and registers. Compressor trees save area and power but complicate layout and verification.
+
+**Appears in.** Tensor Core and systolic accumulation, SIMD reductions, population count, ECC/checksum logic, MISR compaction in test hardware.
+
+### Multiplier array (Arithmetic)
+
+**What it is.** Many multipliers working in parallel on a tile of data — from a row of MAC lanes to a full 2-D systolic grid. The defining arithmetic structure of the AI era: peak throughput = multipliers × clock, and everything else in the chip exists to feed it.
+
+**Key parameters.** Array dimensions (e.g. 128×128); operand precision (FP8 / FP16 / BF16 / INT8); accumulation precision (usually FP32); dataflow (weight-, output- or input-stationary).
+
+**Trade-offs.** Multipliers dominate accelerator area and power; precision is the lever — halving operand width roughly quarters multiplier area. Arrays starve without operand reuse, so an array is only as good as its feeding network.
+
+**Appears in.** TPU MXU (128×128 systolic), GPU Tensor Cores, DSP MAC clusters, image-filter convolvers.
+
+### Barrel shifter (Arithmetic)
+
+**What it is.** Shifts a word by any amount in one cycle: log2(W) stages of muxes, where stage k shifts by 2^k when that bit of the shift amount is set. Variable shifts without iterating.
+
+**Key parameters.** Data width W; shift range; direction (left / right / rotate); arithmetic vs logical fill.
+
+**Trade-offs.** Pure mux area — roughly W×log2(W) muxes — sitting on the ALU critical path, so wide shifters often earn their own pipeline stage. Cheap at 32 bits; at 512-bit vector widths it is built per-lane instead.
+
+**Appears in.** ALU shift/rotate, address generation, floating-point alignment and normalization, bitfield extract, SerDes word alignment.
+
+### Comparator (Arithmetic)
+
+**What it is.** Compares two values and reports equal / greater / less — usually by riding a subtractor's carry chain. One comparator is a small thing; thousands in parallel become a CAM, a wakeup network, or a max-tree.
+
+**Key parameters.** Width; signed vs unsigned; latency (folded into the carry chain); count, in parallel structures.
+
+**Trade-offs.** Width costs carry delay; magnitude compare is pricier than equality. Parallel compare arrays pay power per compare, per cycle.
+
+**Appears in.** Branch resolution, TLB/cache tag match, OoO wakeup tag broadcast, min/max and amax tracking (the Hopper Transformer Engine's scaling depends on it), packet classification.
+
+### Priority encoder (Control & sequencing)
+
+**What it is.** Given a vector of requests, outputs the index of the highest-priority one that is set — ‘who is first?’ as a circuit. It is the selection half of arbiters, interrupt controllers and schedulers.
+
+**Key parameters.** Input width (requesters); fixed vs rotating (round-robin) priority; output encoding (binary index + valid bit).
+
+**Trade-offs.** A naive ripple priority chain is O(N) delay; tree structures fix timing at area cost. Rotating priority needs a mask plus two encoders. Wide priority encoders sit on scheduler critical paths.
+
+**Appears in.** Arbiter grant logic, interrupt controllers, oldest-ready instruction select in OoO schedulers, first-fail capture in diagnosis.
+
+### Counter (Control & sequencing)
+
+**What it is.** A register plus an incrementer, usually with a comparator against a terminal value: the simplest state machine in the zoo. It counts cycles, beats, packets, credits and retries — time made visible to logic.
+
+**Key parameters.** Width in bits (sets max count); up / down / saturating; loadable preset; terminal-count compare.
+
+**Trade-offs.** Nearly free individually; the cost is the compare and the control fanout when a terminal count gates other blocks. Wide counters on fast clocks need carry-lookahead, like adders.
+
+**Appears in.** Loop and beat counters in DMA and tensor sequencers, refresh timers, performance counters, watchdogs and timeouts — and it is the arithmetic core inside every credit counter.
+
+### FSM / controller (Control & sequencing)
+
+**What it is.** A finite-state machine: a state register, next-state logic and output logic stepping through the legal sequence of a protocol or datapath. Every block whose description contains a ‘sequence’ has an FSM — or a counter pretending to be one.
+
+**Key parameters.** State count and encoding (one-hot vs binary); inputs and outputs per state; Mealy vs Moore outputs.
+
+**Trade-offs.** One-hot FSMs are fast and area-hungry; binary-encoded FSMs are dense but slower to decode. FSM bugs are protocol bugs — the verification burden, not the gate count, is the real cost.
+
+**Appears in.** Cache and DRAM controllers, DMA engines, Cerebras dataflow firing control, test controllers, power-management sequencing.
+
+### Pipeline register (Clocking & sync)
+
+**What it is.** The register bank between two combinational stages: it slices a long logic path into clocked steps so the clock can run faster, at the cost of one cycle of latency per slice. Pipelining is just pipeline registers, placed with intent.
+
+**Key parameters.** Width (bits stored); stage position (retiming); enable/stall and flush/bubble controls.
+
+**Trade-offs.** Registers cost area and clock power on every bit, every cycle — and stall/flush control multiplies when a whole pipeline must freeze coherently. Latency vs frequency is the eternal trade.
+
+**Appears in.** Every CPU/GPU pipeline stage boundary, systolic-array skew registers in the TPU MXU, SerDes DSP pipelines.
+
+### Synchronizer (Clocking & sync)
+
+**What it is.** A chain of (usually two) flops that safely samples a signal crossing into a different clock domain, giving metastability time to resolve. Single bits cross through synchronizers; buses cross through async FIFOs or handshakes instead.
+
+**Key parameters.** Stages (2 or 3 flops); MTBF target; single-bit vs multi-bit crossing method.
+
+**Trade-offs.** Each crossing costs 2–3 cycles of latency in the receiving domain — synchronizers are why async-FIFO flags and CDC handshakes feel slow. More stages buy reliability exponentially and cost latency linearly.
+
+**Appears in.** Async FIFO pointers (Gray-coded, then synchronized), reset release, interrupt and status crossings, test/mission clock-mode switching.
+
+
+---
+
+## Level-3 decomposition — Down to the primitives (2026-11-22)
+
+The six Anatomy Lab landmark entries decomposed one level below the Level-2 drill-down: for each signature block, the primitives it is built from and what each primitive does there. Governing parameters are stated only where primary sources publish them; where a vendor publishes no primitive-level parameters, the decomposition names the primitive and its role and says so plainly.
+
+### NVIDIA Hopper H100
+
+#### Down to the primitives: Fourth-generation Tensor Core — and the SM partition around it
+
+- **Multiplier array** — The Tensor Core itself: a dense matrix-multiply-accumulate array multiplying the A fragment (from registers or shared memory) by the B fragment (from shared memory) into FP32 accumulators. Published: four Tensor Cores per SM, one per partition. Not published: the array's internal dimensions or per-cycle MAC count as a primitive spec — NVIDIA publishes throughput per SM, not array geometry.
+- **Adder tree** — FP32 accumulation inside the MMA: partial products reduce through the array's adder network into accumulators that live in registers across the warp's 32 threads. Tree depth, compressor style and pipelining are not published.
+- **Register file** — Holds A fragments and the FP32 accumulators. Published: 256 KB per SM (verified — fact records), shared across the four partitions. Per-partition port counts are not published.
+- **SRAM bank** — The shared-memory half of the combined L1/shared block stages tiles and feeds the B operand with no register-file traffic. Published: 256 KB combined per SM, shared memory configurable up to 228 KB (verified — fact records). Bank count, width and port style are not published.
+- **Mux** — Operand collectors mux operands between the register file, shared memory and immediate paths into the array's inputs — the selection layer that lets one instruction feed a whole tile multiply. Collector structure and mux radix are not published.
+- **FIFO / queue** — Each partition's scheduler holds ready warps in issue queues between dispatch and execution, and the Tensor Memory Accelerator (TMA) sequences tile copies from descriptors instead of per-thread loads. Published: the TMA exists and moves large blocks between global and shared memory, including cluster copies (verified — new fact record). Queue depths are not published.
+- **FSM / controller** — One warp scheduler plus dispatch unit per SM partition — four per SM — picks a ready warp each cycle. It is a priority-select controller, not a scoreboarded CPU scheduler. The structure is published in the whitepaper; the select policy and queue sizes are not.
+- **Pipeline register** — Registers stage the shared-memory read, the MMA sweep and the register writeback; the warp-group (wgmma) pipeline is deep enough that warps overlap it entirely. Stage counts are not published.
+- **Synchronizer** — Hopper's asynchronous transaction barrier tracks TMA transactions and thread arrivals so consumers wait on data movement, not on instructions — the cluster-scale synchronizer primitive. Published as a feature (verified — new fact record: ‘for doing atomic data movement and synchronization’). Barrier count and transaction-table depth are not published.
+
+**Parameter honesty.** Parameter honesty: NVIDIA publishes the SM-level totals used above (register file, shared memory, Tensor Cores per SM) and the TMA/barrier features; everything below that level — array geometry, queue depths, collector structure — is not published, and this decomposition says so rather than estimating it.
+
+#### Down to the primitives: Transformer Engine — the rescaling wrapped around the Tensor Core
+
+- **Comparator** — The engine's bookkeeping is a running maximum: the software stack tracks each tensor's amax (maximum absolute value) history to choose its FP8 scale. That is a comparator reduction maintained per tensor — no dedicated hardware max-tree is documented by NVIDIA, and none is claimed here.
+- **Multiplier** — One scaling multiply on the way in — values are scaled as they cast to FP8 — and the inverse scale applied to the FP32 accumulators on the way out. The multipliers live in the conversion datapath around the Tensor Core; their count and width are not published beyond the FP8 formats themselves (E4M3 / E5M2, per tensor, per layer — Level-2).
+- **Mux** — A format-select mux chooses the FP8 flavour (E4M3 vs E5M2) and the FP8 vs 16-bit path per tensor — NVIDIA describes the engine as dynamically choosing between FP8 and 16-bit calculations per layer. Mux structure is not published.
+- **Counter / register state** — Per-tensor scale factors and amax history are carried between layers as small state — architecturally a register/counter file, but held by the software stack (Transformer Engine library with cuDNN), not a documented hardware table. Sizes are not published.
+
+**Parameter honesty.** The Transformer Engine is deliberately thin at the primitive level: a comparator-fed scale choice, two multiplies and a format mux around an unchanged multiplier array. That thinness is the design — the novelty is where the scaling sits, not new arithmetic.
+
+### Google TPU v4
+
+#### Down to the primitives: MXU — the 128×128 systolic array inside a TensorCore
+
+- **Multiplier array** — The MXU itself: a 128×128 grid of multiply-accumulate cells — 16,384 MACs per MXU, four MXUs per TensorCore, two TensorCores per chip (verified — ISCA 2023, fact records). Each cell is one multiplier and one adder holding a stationary weight.
+- **Adder tree — as a chain** — Accumulation here is deliberately NOT a tree: each cell adds its product to the partial sum arriving from its neighbour, so the GPU-style adder tree becomes a 128-long adder chain woven through the array. The chain's pipelining is the systolic flow itself.
+- **Pipeline register** — Activations are skewed by per-row delay registers so each element meets the right cell on the right cycle, and partial sums pipeline cell to cell; the array's fill latency is its 128 steps. The ISCA paper describes the systolic dataflow; it does not publish a register-level schematic, so no per-cell register counts are stated.
+- **SRAM bank** — VMEM stages operands for the array: 16 MiB per TensorCore; the two TensorCores share 128 MiB of CMEM (verified — ISCA 2023). Bank counts, widths and port styles are not published.
+- **FIFO / queue** — DMA queues feed VMEM from HBM and drain results to it; the XLA-compiled schedule is built on the assumption that they never empty mid-tile. Queue depths are not published.
+- **FSM / controller** — A scalar control unit sequences the MXU and VPU from the compiled schedule — counters stepping through tile loops rather than dynamic, scoreboarded scheduling. The paper names the scalar unit's role; its internal structure is not published.
+- **Mux** — Operand muxes at the array edges select between VMEM, CMEM and VPU results. Radix and structure are not published.
+
+**Parameter honesty.** Parameter honesty: the ISCA 2023 paper publishes the array geometry and memory sizes used above; below that level — queue depths, bank structure, sequencer internals — Google publishes nothing, and this decomposition invents nothing.
+
+#### Down to the primitives: SparseCore — the dataflow engine for embeddings
+
+- **FIFO / queue** — Outstanding embedding gathers queue inside the SparseCore while HBM latency is absorbed — the queueing is the point of the block. Depths are not published (new fact record: unverifiable — the ISCA paper discloses the SparseCore's role and effect, not its internal buffers).
+- **Counter** — Index counters walk each feature's embedding index list and issue the gathers. Counter widths and issue rates are not published.
+- **Adder tree** — Returned embedding vectors are reduced — summed or averaged — as they stream back, in a streaming adder reduction. Width and tree depth are not published.
+- **Mux / steering** — Because embedding tables are sharded across the pod, gathered vectors steer over the ICI torus toward the TensorCore that needs them — muxing at pod scale. Per-chip steering structure is not published.
+
+**Parameter honesty.** Published anchor: SparseCores accelerate embedding-reliant models 5×7× for about 5% of die area and power (verified — ISCA 2023 abstract). Everything internal to the SparseCore beyond that is unpublished.
+
+### Apple Firestorm — M1
+
+#### Down to the primitives: The wide front end and the ~630-entry reorder buffer — at the primitive level
+
+- **FIFO / queue** — The reorder buffer is architecturally a circular FIFO: instructions allocate at the tail and retire in order at the head. Depth ~630 entries is an AnandTech microbenchmark measurement — Apple publishes no ROB figure (unverifiable — fact records).
+- **Register file** — The rename file holds physical registers for renamed operands: roughly 354 integer and 384 floating-point registers, measured by microbenchmarks. Apple publishes neither the counts nor the port count (unverifiable).
+- **CAM** — Issue queues wait on producer tags: each waiting entry compares broadcast result tags against its source tags — a small CAM per queue, the wakeup half of wakeup/select. Queue partitioning and entry counts are inferred from measurements (~148–154 outstanding loads, ~106 stores), not published.
+- **Priority encoder** — The select half: when more instructions are ready than there are ports, an oldest-first priority select grants issue. Its width and structure are not published.
+- **Mux** — Producer results bypass to consumer inputs through forwarding muxes at the execution ports — the wiring that makes a 630-entry window usable instead of decorative. Mux radix is not published.
+- **Comparator** — Branch prediction fronts the whole machine: direction/target comparators and counter tables decide the fetch stream eight instructions wide. Predictor structure — table sizes, counter widths, whether it is TAGE-like — is not published; Apple discloses no predictor structure at all.
+- **Barrel shifter / adder tree** — Inside the measured four 128-bit NEON pipes and the integer ALUs sit the standard shifter and adder primitives. Per-unit structure is not published.
+- **Counter** — Fetch sequencing runs ahead on predicted paths, fed by a 192 KB L1 instruction cache (reported via Darwin kernel sources, per AnandTech). Fetch queue depth is not published.
+
+**Parameter honesty.** Parameter honesty: Apple has published no primitive-level parameter for Firestorm — no FIFO depth, port count, table size or mux radix in this decomposition comes from Apple. Every number is a microbenchmark measurement and carries status unverifiable in the fact records (new Level-3 record included). Naming the primitives is safe — a reorder buffer IS a circular queue, wakeup IS a CAM — sizing them from outside is not.
+
+### Cerebras WSE-2
+
+#### Down to the primitives: The dataflow core — and its 5-port router
+
+- **SRAM bank** — 48 KB of local SRAM per core in eight single-ported banks, each 32-bit wide (verified — fact records). Banking is how a single-ported technology feeds a wider datapath: the banks together sustain two full 64-bit reads and one full 64-bit write per cycle (verified — new fact record).
+- **Register file** — 16 general-purpose registers, plus 44 data-structure registers (DSRs) holding tensor descriptors — pointer, length, shape, size (both verified — new fact records). Port counts are not published.
+- **Multiplier array — a row, not a grid** — Four FP16 FMAC units on a 64-bit datapath (verified — new fact record), inside a compact six-stage pipeline (verified — new fact record). The wafer gets its ‘array’ by replicating this small row 850,000 times, not by widening it.
+- **FSM / controller** — Hardware state machines sequence each tensor operation from its DSR descriptor, and dataflow control fires instructions when fabric data arrives — the core also juggles eight simultaneous tensor operations (‘micro-threads’, verified — new fact record) under a priority-aware scheduler. State counts and encodings are not published.
+- **Comparator** — Incoming wavelets carry a color; matching the arriving color against the operation waiting on it is the trigger compare that fires computation. A wavelet is 32 bits — one FP16 data element plus 16 bits of control (verified — new fact record).
+- **Mux — the router** — Each core's fabric router is a 5-port design: 32-bit bidirectional interfaces in the four cardinal directions and one port facing the core itself (verified — new fact record). Routing is static, with 24 independent routes — colors — time-multiplexed per link (verified — new fact record), so route selection was done by the compiler; there is no dynamic crossbar arbiter in the packet path.
+- **FIFO / queue** — The fabric is lossless with, in Cerebras' words, very low buffering — shallow FIFOs at the router ports with backpressure instead of drops. Exact FIFO depths are not published.
+- **Credit counter** — Losslessness on static routes is maintained with minimal buffering; whether the accounting is credit-based per color is not published. Cerebras discloses the lossless property, not the counter structure — stated plainly rather than assumed.
+
+**Parameter honesty.** Parameter honesty: unusually for this zoo, Cerebras' Hot Chips 34 deep dive (IEEE Micro 43(3)) publishes genuine primitive-level numbers — bank organization, register counts, FMAC count, router ports, wavelet format, color count — and the new fact records added in this pass capture them with exact quotes. FIFO depths and port counts of the register file remain unpublished.
+
+### Broadcom Tomahawk 5 (BCM78900)
+
+#### Down to the primitives: The shared packet buffer — and the traffic manager around it
+
+- **SRAM bank** — One packet buffer pooled across all 64 ports (verified — fact records): the buffer's aggregate SRAM bandwidth, not a crossbar, does the any-to-any work. NOT published: capacity in megabytes, cell size, bank count and port structure (new fact record: unverifiable — Broadcom discloses the shared-buffer architecture and its latency claims only).
+- **Crossbar — deliberately absent** — A shared-buffer switch replaces the crossbar: a packet is written once and read once, and buffer bandwidth substitutes for an N×N switch matrix. Naming the absence matters — it is the primitive-level difference between Tomahawk and VOQ/crossbar designs elsewhere in this zoo.
+- **FIFO / queue** — Per-port, per-class queues hold packets between the buffer and their scheduler grant, with dynamic admission thresholds on the shared pool standing in for static partitions. Queue counts per port and depths are not published.
+- **Switch arbiter** — The traffic manager arbitrates queued packets onto each egress port at line rate — arbitration across 64 × 800G of demand, fed by 512 × 100G PAM4 SerDes lanes. The arbitration algorithm and its grant pipelining are not published.
+- **TCAM / hash tables** — The single-pass parse → lookup stage resolves forwarding, ECMP and single-pass VxLAN bridging/routing. Merchant-switch lookups are hash tables plus TCAM-class structures, but Broadcom does not publish Tomahawk 5's table sizes or TCAM capacities — not published, and not estimated here.
+- **Comparator** — Cognitive Routing compares utilization on the hashed path against alternatives, locally and downstream, and steers flowlets to lighter links (verified — fact records). Thresholds and counter widths are not published.
+- **Counter** — In-band telemetry inserts metadata at line rate recording queue size, packet latency and switch utilization (verified — new fact record) — all of it read from hardware counters sampled per packet. The counter inventory is not published.
+- **FSM / controller — as processors** — Six on-chip Arm processors run streaming telemetry and embedded applications such as statistics summarization (verified — new fact record): general-purpose control processors beside the fixed pipeline, deliberately not in the packet path.
+
+**Parameter honesty.** Parameter honesty: Broadcom publishes radix and rates (64 × 800GbE; 256 × 200GbE also supported — new fact record), the shared-buffer architecture and the feature set. Buffer capacity, cell size, queue depths and table sizes — the numbers a Level-3 decomposition most wants — are not published, and this entry leaves them blank rather than filling them with the industry folklore numbers that circulate without a primary source.
+
+### Scan Design & ATPG Architecture
+
+#### Down to the primitives: The scan chain — and the EDT wrapped around it
+
+- **Mux** — The founding primitive of the whole entry: the mux-D scan flop is a 2:1 mux before every flip-flop's D input, selecting functional data in mission mode and scan data in test mode. Its count is the design's flop count — there is no architecture-level number, by definition.
+- **FIFO / shift register** — A scan chain is the flops themselves reconfigured as a serial shift register — a FIFO whose depth is the chain length. Chain count and length are DFT-insertion and floorplan choices made per design, not constants of the architecture (new fact record: unverifiable as architecture-level values).
+- **Adder tree — as an XOR tree** — EDT response compaction XORs hundreds of chain outputs down into a MISR signature — an adder-tree cousin built from XOR gates. The compression ratio (typically an order of magnitude or more) is a tool and design setting, not a fixed parameter.
+- **Comparator** — The shifted-out response, or the MISR signature, is compared against the simulated good-machine value — one wide equality compare per pattern, on the ATE or on-chip.
+- **FSM / controller** — A test-mode controller sequences shift and capture, and the on-chip clock controller (OCC) generates the single at-speed capture pulse between slow shifts. These state machines are generated per design by DFT tools (Tessent-class); no canonical state count exists.
+- **Counter** — Shift counters track position within the chain; pattern counters track ATPG vectors applied. Their widths follow chain length and pattern count — per design.
+- **Synchronizer** — Test clocks and functional clocks cross under controlled clock muxing and synchronization so slow shift and at-speed capture never glitch into each other. The implementation is tool-inserted, per design.
+
+**Parameter honesty.** Parameter honesty: scan is the one entry in this pass where ‘parameters not published’ is structural, not secretive — the architecture defines the primitives (mux, chain, compactor, controller) and every size is a property of the design being tested, exactly as the Level-2 section states for chain counts and coverage sign-off.
+
+**New fact records added in this pass** (appended to `files/fact-records.json`; statuses per the fact standard):
+
+- [verified] **NVIDIA Hopper H100** — Tensor Memory Accelerator (TMA) function. Source: NVIDIA Hopper Architecture In-Depth (NVIDIA).
+- [verified] **NVIDIA Hopper H100** — Asynchronous transaction barrier function. Source: NVIDIA Hopper Architecture In-Depth (NVIDIA).
+- [verified] **Cerebras WSE-2** — Fabric router port design. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Cerebras WSE-2** — Fabric packet (wavelet) format. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Cerebras WSE-2** — Static routes (colors) per fabric link. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Cerebras WSE-2** — Core tensor datapath composition. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Cerebras WSE-2** — General-purpose registers and pipeline depth. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Cerebras WSE-2** — Data-structure registers (DSRs) per core. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Cerebras WSE-2** — Per-core SRAM bandwidth per cycle. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Cerebras WSE-2** — Simultaneous tensor operations (micro-threads) per core. Source: Cerebras Architecture Deep Dive: First Look Inside the Hardware/Software Co-Design for Deep Learning (Cerebras).
+- [verified] **Broadcom Tomahawk 5 (BCM78900)** — On-chip Arm processors for telemetry. Source: Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads (Broadcom (GlobeNewswire)).
+- [verified] **Broadcom Tomahawk 5 (BCM78900)** — In-band telemetry metadata content. Source: Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads (Broadcom (GlobeNewswire)).
+- [verified] **Broadcom Tomahawk 5 (BCM78900)** — Maximum 200GbE port radix. Source: Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads (Broadcom (GlobeNewswire)).
+- [unverifiable] **Broadcom Tomahawk 5 (BCM78900)** — Shared packet buffer capacity, cell size and queue depths. Source: Broadcom Ships Tomahawk 5, Industry's Highest Bandwidth Switch Chip to Accelerate AI/ML Workloads (Broadcom (GlobeNewswire)).
+- [unverifiable] **Google TPU v4** — SparseCore internal queue depths and buffer sizes. Source: TPU v4: An Optically Reconfigurable Supercomputer for Machine Learning with Hardware Support for Embeddings (ISCA 2023) (Google / ACM).
+- [unverifiable] **Apple Firestorm — M1** — Primitive-level parameters (issue-queue partitioning, predictor tables, bypass radix, register-file ports). Source: Apple Silicon M1 / A14 Deep Dive (AnandTech).
+- [unverifiable] **Scan Design & ATPG Architecture** — Scan chain count/length and EDT compression ratio as architecture-level constants. Source: IEEE Std 1500 / IEEE Std 1149.1 test-access standards (IEEE).
+
+### Intel 4004
+
+#### Down to the primitives: The address register — program counter and 3-level stack as a dynamic RAM array
+
+- **Dynamic RAM cell array (storage)** — The block itself is storage, not logic: a 4 × 12-bit array of dynamic cells — one level holds the program counter, three form the subroutine stack (verified — MCS-4 User's Manual, fact records). Because the cells are dynamic, every level must be re-read to hold its charge, which is why the block carries its own refresh counter.
+- **Mux** — The stack address has two sources and one decoder: the effective address counter (which stack level is current) and the refresh counter (which level is being re-read) are multiplexed to the address-register decoder (verified — MCS-4 User's Manual: "The stack address is provided by the effective address counter and by the refresh counter, and it is multiplexed to the decoder."). The same muxing idea recurs at the index register, whose address comes from the internal bus or its refresh counter.
+- **Counter** — Two counters steer the array: the effective address counter steps the stack pointer on call and return, and the refresh counter scans every location so no dynamic cell loses its charge — the reason reset must be held for at least 8 instruction cycles (64 clock periods) before the CPU is usable (verified — fact records). Counter widths are not published in the manual.
+- **Register (address buffer)** — The address, once read out of the array, sits in a 12-bit address buffer (the "buffer register" in Figure 3) before it is sent anywhere — the staging register between the RAM array and the bus.
+- **Demux** — The buffer's 12 bits are demultiplexed onto the 4-line internal bus in three 4-bit slices at A1, A2 and A3 (verified — MCS-4 User's Manual). The demux is the pin-count trick in hardware form: one 4-bit slice per clock period instead of twelve parallel wires.
+- **Adder (carry-look-ahead incrementer)** — A 4-bit carry-look-ahead circuit advances the address by one after each slice is sent out, and the incremented address is written back into the array (verified — fact records). Note the asymmetry with the compute adder: the incrementer gets look-ahead because it sits in the critical fetch path, while the data adder is ripple-through-carry.
+- **FSM / controller** — The timing and SYNC generator sequences the eight clock periods (A1–A3, M1–M2, X1–X3) that pace the read, the three slices, the increment and the writeback; the double-cycle flip-flop stretches the sequence to 16 clocks for the five double-length instructions (verified — MCS-4 User's Manual). The generator's state count and phase logic are not published as a schematic.
+- **Amplifier & mux (output driver)** — Figure 3 labels an "AMPLI. & MUX" block on the address path: the slices are amplified and multiplexed onto the D0–D3 pins, and the data-bus output buffers are tri-state — "1", "0" and floating — so only one block drives a line at a time (verified — MCS-4 User's Manual).
+
+**Parameter honesty.** Parameter honesty: the manual publishes the array geometry (4 × 12 bits), the 4-bit slice width, the 8/16-clock cycle counts and the reset duration; it publishes no counter widths, no cell schematic, no decoder structure and no transistor counts, and this decomposition invents none of them.
+
+#### Down to the primitives: The 4-bit adder, accumulator and decimal-adjust ROMs
+
+- **Adder (ripple-through-carry)** — Four 1-bit full adders chained carry-to-carry: the carry out of each bit feeds the next, so the sum settles in four carry steps. One operand comes from the ADB register, the other from the accumulator plus the carry flip-flop (verified — MCS-4 User's Manual: "The 4-bit adder is of the ripple-through carry type."). A ripple chain, not a tree or a look-ahead network — the cheapest adder that fits, and the reason every operation wider than one digit is a software loop.
+- **Register (ADB buffer register)** — The ADB register stages the bus operand for the adder: the index register's 4 bits arrive over the internal bus, land in ADB, and only then enter the adder. 4 bits wide, published as a named block in Figure 3.
+- **Register file (dynamic RAM array)** — The operands themselves live in the 16 × 4-bit index register array — a second dynamic RAM array, read through a multiplexer onto the internal bus (verified — fact records). The compute block's register file is literally a tiny RAM, refreshed by the same kind of counter as the address register.
+- **Mux & shifter** — The accumulator carries a mux and shifter that implement rotate left and rotate right (verified — MCS-4 User's Manual): a 4-bit rotate is a 4-way selection — each bit takes its neighbour's value, with the end bit taking the carry — so the shifter is four 2:1 muxes, not a barrel shifter. Figure 3 labels it "MUX & SHIFTER".
+- **ROM (lookup table)** — The special ROMs are the block's clever primitive: a lookup table that performs code conversion for the DAA and KBP instructions (verified — MCS-4 User's Manual). The accumulator value addresses the ROM and the ROM outputs the corrected digit — decimal adjust done by table, not by arithmetic. The ROMs' dimensions are not published in the manual.
+- **Comparator** — The condition logic is a zero/carry compare: it senses ADD = 0 and ACC = 0 (a 4-bit NOR on each), the carry flip-flop's state and the external TEST pin, and its output sets the condition flip-flop that gates JCN and ISZ (verified — MCS-4 User's Manual). No separate compare instruction exists because the comparator watches every result for free.
+- **Flip-flop (1-bit registers)** — The block's state is single bits: the carry flip-flop holds the adder's overflow between digit steps, the condition flip-flop holds the branch decision, and the double-cycle flip-flop holds whether the current instruction needs a second cycle (verified — MCS-4 User's Manual: "A double cycle FF is set from any one of 5 double-length instructions.").
+- **FSM / controller** — The instruction register (OPR + OPA, each 4 bits) is loaded from the internal bus through a multiplexer at M1 and M2, and the instruction decoder gates the decoded opcode with timing signals to produce the control signals for every functional block (verified — MCS-4 User's Manual). The decoder's internal structure — PLA, ROM or random logic — is not described in the manual, and this decomposition does not claim one.
+
+**Parameter honesty.** Parameter honesty: the manual publishes the datapath widths (4-bit adder, 4-bit accumulator, 3-bit command-control code), the 45-instruction count and the 850 µs figure for adding two 8-digit numbers; it publishes no ROM dimensions, no decoder structure, no gate or transistor counts, and this decomposition invents none of them.
+
+**New fact records added in this run** (appended to `files/fact-records.json`; statuses per the fact standard):
+
+- [verified] **Intel 4004** — Stack-address mux: effective address counter and refresh counter multiplexed to the address-register decoder. Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — Address buffer demultiplexed onto the internal bus in three 4-bit slices (A1, A2, A3). Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — ADB register supplies one adder operand from the internal bus. Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — Accumulator shifter implements rotate right and rotate left. Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — Special ROMs perform code conversion for DAA and KBP instructions. Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — Condition logic senses ADD = 0, ACC = 0, carry FF and TEST to implement JCN and ISZ. Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — Instruction register (OPR + OPA) loaded from the internal bus through a multiplexer at M1/M2. Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — Double-cycle flip-flop set by any of the 5 double-length instructions. Source: Intel MCS-4 User's Manual (1973), §III.
+- [verified] **Intel 4004** — Data-bus output buffers are tri-state ("1", "0", floating); only one buffer drives a line at a time. Source: Intel MCS-4 User's Manual (1973), §II, Figure 2.
+- [unverifiable] **Intel 4004** — Primitive-level parameters not published in the manual: refresh/effective-address counter widths, special-ROM dimensions, instruction-decoder structure, cell/transistor counts. Source: Intel MCS-4 User's Manual (1973).
+
+## Level-4 decomposition — Down to the gates (2026-11-22)
+
+The first Level-4 pass (Sai, Nov 22, 2026: "Go as deep as you can, till you cant decompose anymore") takes every primitive in the seven Level-3 entries one level further: into its gate-level structure, and each gate into transistors. The transistor is the floor — below it is device physics, not architecture. The honesty rule is strictest at this depth: gate-level structure a primary source actually publishes (rare — essentially only the Intel 4004's 1973 manual) is claimed as a chip fact under the Fact standard; everything else is the generic textbook construction of the primitive, labelled **standard construction** in the text, and never presented as the chip's actual implementation. Generic textbook material gets no fact records; the pass added 7 records only to scope the boundary (298 -> 305).
+
+### The bottom layer — the primer’s floor
+
+The Basic Blocks Primer gains a bottom layer: the five leaf cells every Level-4 decomposition bottoms out in. Everything in this layer is generic textbook construction — it describes how these cells are built in any CMOS library and is NOT a fact about any specific chip.
+
+- **Universal gates — NAND & NOR** — Every logic function reduces to NAND (or NOR) alone: NOT is a NAND with its inputs tied together, AND is a NAND followed by an inverter, OR falls out of NANDs by De Morgan's laws, and any sum-of-products maps to a two-level NAND–NAND network. NAND and NOR are functionally complete — they are the atoms every other gate, and so every primitive in this primer, is assembled from. Textbook-standard construction — generic CMOS, not a fact about any specific chip. Key parameters: Inverter = 2 transistors (1 PMOS pull-up + 1 NMOS pull-down). NAND2 = 4 (2 PMOS in parallel + 2 NMOS in series). NOR2 = 4 (the dual: 2 PMOS in series + 2 NMOS in parallel). AND2 / OR2 = 6 (NAND / NOR + inverter). XOR2 ≈ 10–12 depending on style. Trade-offs: Static CMOS is complementary: a PMOS pull-up network and an NMOS pull-down network, one of them always off, so there is no static current path. Series stacks are the cost — beyond roughly four series transistors, delay and device sizing blow up, which is why wide gates are built as trees of small ones. Appears in: The leaf cell of every Level-4 decomposition in this zoo — every FIFO comparator, mux select and adder carry bottoms out here.
+
+- **Latch & D flip-flop** — Storage from feedback: an SR latch is two cross-coupled NAND (or NOR) gates, each gate's output feeding the other's input, so the pair holds one bit with no clock at all. Gate the inputs and it becomes a D latch, transparent while enabled. Put two D latches in series driven by opposite clock phases — master, then slave — and the pair copies its input only at the clock edge: a master–slave D flip-flop. Textbook-standard construction — generic, not a fact about any specific chip. Key parameters: SR latch = 2 gates ≈ 8 transistors. Master–slave D flip-flop ≈ 20–28 transistors in a typical standard-cell library (the range covers transmission-gate and NAND-based styles, with or without set/reset). A scan flop adds a 2:1 mux in front (≈ +6–8 transistors). Trade-offs: The flip-flop is the most expensive one-bit store in the zoo — roughly ten times the transistors of an SRAM bit — but it is fully static, fast and testable, which is why pipelines and control state are flops while bulk data lives in SRAM. Clock power is the tax: the clock pin toggles every cycle whether the data changes or not. Appears in: Every pipeline register, counter, FSM state bit and credit counter in this primer is built from these; the scan chain (Scan Design entry) is these, plus one mux each.
+
+- **6T SRAM cell** — Two cross-coupled inverters (4 transistors) form a bistable latch holding one bit; two NMOS access transistors — the fifth and sixth — connect the internal nodes to a differential bitline pair (BL / BLB) under control of the wordline. Read: precharge both bitlines, raise the wordline, and the cell pulls one side down slightly — a sense amplifier detects the small differential. Write: drive the bitlines hard enough to overpower the cell's weaker pull-up and flip it. Textbook-standard construction — generic, not a fact about any specific chip. Key parameters: 6 transistors per bit. Cell stability is a sizing-ratio game: the access transistors must be weaker than the pull-downs (read stability) but stronger than the pull-ups (writability) — the classic cell-ratio and pull-up-ratio constraints. Trade-offs: The densest reliable one-bit store in CMOS — far smaller per bit than a flip-flop — bought with differential sensing, precharge energy on every access, and a static noise margin that shrinks as supply voltage scales down. Appears in: The leaf cell of every SRAM bank, cache array, packet buffer and SRAM-style register file in this zoo — Tomahawk's shared buffer and Cerebras' 40 GB are this cell, replicated.
+
+- **CAM cell** — A CAM cell is storage plus compare: an SRAM cell holds the bit, and XOR match logic compares it against the search bit presented on complementary searchlines; every cell on a row drives one shared, precharged matchline, and a single mismatching cell pulls the matchline down — a wired-NOR of per-bit XNOR results. Textbook-standard construction — generic, not a fact about any specific chip. Key parameters: NOR-type CAM cell ≈ 10 transistors (6T storage + ≈4T compare). TCAM ≈ 16 transistors — two storage cells per bit, so the stored pair can encode 0, 1 or don't-care (X). Trade-offs: Every lookup precharges and evaluates every matchline in the array — compare energy per bit is the highest of any memory in the zoo, which is why CAMs stay small and SRAM-plus-hash structures do the bulk lookup work. Appears in: The leaf cell of TLBs, cache tag arrays, out-of-order wakeup tag stores and switch forwarding/ACL TCAMs — Firestorm's wakeup CAMs and Tomahawk's lookup tables bottom out here.
+
+- **Full adder** — A half adder is an XOR gate (the sum) plus an AND gate (the carry). A full adder is two half adders cascaded — the second adds the carry-in — with an OR gate merging the two carry outputs. Chain N full adders and the carry ripples bit to bit; group the carries with lookahead logic and the same cells become the carry-lookahead adders inside every fast ALU. Textbook-standard construction — generic, not a fact about any specific chip. Key parameters: ≈28 transistors for the classic mirror-adder full-adder cell (one complex CMOS gate generating the carry, plus sum logic). A one-bit slice of every adder tree, counter incrementer and multiplier compressor tree in this primer is this cell. Trade-offs: Ripple is smallest and slowest; carry-lookahead and carry-select buy speed with area and wiring. Inside multipliers the adders hide in compressor trees (3:2 and 4:2) so partial products collapse in logarithmic depth before one final carry-propagate adder finishes. Appears in: The leaf cell of adder trees, ALUs, address incrementers and counters everywhere — including, in 4-bit ripple form, the Intel 4004's one adder (see its Level-4 decomposition).
+
+### NVIDIA Hopper H100
+
+#### Down to the gates: Fourth-generation Tensor Core — and the SM partition around it
+
+- **Multiplier array** — Each MAC lane bottoms out in a gate-level multiplier: AND gates form the partial products from the operand bits, a compressor tree of full adders (≈28-transistor mirror cells — primer, bottom layer) collapses them, and one final carry-propagate adder finishes. Floating-point lanes add an exponent adder (a small lookahead adder), a sign XOR and a normalizer built from a priority encoder and a barrel shifter. Standard construction — NVIDIA publishes the array's throughput and dimensions, never its gate netlist.
+- **Adder tree** — A reduction tree whose nodes are the primer's full adder: carry-save compressors (full adders used as 3:2 counters) at the leaves, one carry-propagate adder at the root. FP32 accumulation wraps each add with alignment shifters — log-stage mux arrays — and a rounding incrementer. Standard construction.
+- **Register file** — At gate level a GPU register file is a latch/SRAM-style array: wordline decoders (NAND/AND trees), storage cells (cross-coupled latch pairs — the primer's latch cell), per-port column mux trees and sense amplifiers. Which cell style NVIDIA uses, and the transistor-level port structure, are not published. Standard construction.
+- **SRAM bank** — Rows of 6T SRAM cells (primer, bottom layer) behind a row decoder — a tree of NAND gates selecting one wordline — transmission-gate column muxes (2 transistors per leg) and latch-type differential sense amplifiers. NVIDIA publishes shared-memory capacity and configurability (Level-3 fact records), not macro internals. Standard construction.
+- **Mux** — The operand-collector and bypass muxes are trees of 2:1 muxes; each 2:1 mux is two transmission gates (one NMOS + one PMOS per leg) or an equivalent NAND-gate cell, with selects decoded by AND trees from the scheduler's one-hot grants. Standard construction.
+- **FIFO / queue** — Storage (a flop array or a small SRAM) plus write and read pointer counters — D flip-flops with full-adder incrementers — plus full/empty comparators: XNOR gates per pointer bit feeding an AND tree, with Gray-coded pointers and 2-flop synchronizers where a queue crosses clock domains. Standard construction; the TMA and issue queue depths are not published.
+- **FSM / controller** — State bits are D flip-flops (≈20–28 transistors each, primer); next-state and output logic are NAND/NOR networks — whatever the synthesis tool maps the state table to in the standard-cell library. No gate structure for Hopper's schedulers is published. Standard construction.
+- **Pipeline register** — One master–slave D flip-flop per bit (≈20–28 transistors, primer), usually with a 2:1 enable mux in front so the stage can stall — the mux + flop pair is the same cell shape as a scan flop, minus the scan input. Standard construction.
+
+Honesty: NVIDIA publishes Hopper at block and throughput level only — no gate-level structure for any part of the SM appears in any NVIDIA source. Everything above is the standard textbook construction of the named primitive, pointing at the primer's bottom layer; none of it is a claim about NVIDIA's actual netlist (new Level-4 fact record: unverifiable).
+
+#### Down to the gates: Transformer Engine — the rescaling wrapped around the Tensor Core
+
+- **Synchronizer** — Two D flip-flops in series in the receiving clock domain — the gate-level content is deliberately plain: the first flop is allowed to go metastable and the chain gives it a full clock period to resolve before the value is used. Standard construction.
+- **Comparator** — Amax and scale comparisons ride a subtractor: XOR gates form the difference bits, a chain of full adders propagates the borrow, and the final borrow plus a NOR-tree zero-detect yield greater-than / equal. Floating-point compares check exponents first — a small priority network in front of the mantissa compare. Standard construction.
+- **Multiplier** — The scale-factor multiply is one gate-level FP multiplier: a sign XOR, an exponent adder, a mantissa multiplier (AND partial products + full-adder compressor tree + final adder), then normalize-and-round logic. Standard construction.
+- **Mux** — Format and scale selection muxes: transmission-gate 2:1 trees, 2 transistors per input leg, selects decoded from the engine's control state. Standard construction.
+- **Counter / register state** — Amax history and scale factors live in D-flip-flop registers updated through comparator-driven muxes; any sequencing counters are flop banks with full-adder incrementers and XNOR+AND terminal-count comparators. Standard construction.
+
+The Transformer Engine stays thin at gate level too — a comparator, two multipliers and a mux around an unchanged array. The novelty is where the scaling sits, not new gate-level arithmetic; and all of it is standard construction, as above.
+
+### Google TPU v4
+
+#### Down to the gates: MXU — the 128×128 systolic array inside a TensorCore
+
+- **Multiplier array** — One processing element = one small multiplier + one adder, tiled 128×128. The BF16 multiplier at gate level: a sign XOR, an 8-bit exponent adder, and a mantissa multiplier of AND-gate partial products collapsed by full-adder compressors into a final carry-propagate adder; the accumulate adder is FP32, with alignment and normalization mux networks around it. All leaf cells are the primer's. Standard construction — the ISCA 2023 paper publishes the array geometry, not the PE netlist.
+- **Adder tree — as a chain** — Systolic accumulation is a chain, not a tree: each PE adds its product into the partial sum arriving from its neighbour, so the gate-level content is one full-adder-based FP adder per PE — XOR/AND/OR carry logic from the primer's full-adder cell, replicated across the array. Standard construction.
+- **Pipeline register** — The registers between PEs are plain D-flip-flop banks (≈20–28 transistors per bit, primer) — and in a systolic array they are the timing architecture: activations and partial sums advance exactly one PE per clock because a flop stands between every pair of neighbours. Standard construction.
+- **SRAM bank** — VMEM and the on-chip buffers are 6T SRAM cell arrays (primer, bottom layer) with NAND-tree row decoders, transmission-gate column muxes and latch-type sense amplifiers. Google publishes capacities, not macro internals. Standard construction.
+- **FIFO / queue** — Storage plus write/read pointer counters (D flip-flops + full-adder incrementers) plus full/empty comparators (XNOR gates per pointer bit into an AND tree). Standard construction.
+- **FSM / controller** — The TensorCore sequencers are state registers (D flip-flops) plus synthesized NAND/NOR next-state logic. Standard construction.
+- **Mux** — Operand steering muxes are transmission-gate trees (2 transistors per leg) under decoded one-hot selects. Standard construction.
+
+Honesty: the ISCA 2023 paper publishes array geometry and memory sizes and nothing at gate level. Every gate structure above is standard construction from the primer's bottom layer, not Google's netlist (new Level-4 fact record: unverifiable).
+
+#### Down to the gates: SparseCore — the dataflow engine for embeddings
+
+- **FIFO / queue** — The gather/scatter queues decompose exactly as the MXU's queues do: storage + pointer counters + XNOR/AND flag comparators. Standard construction.
+- **Counter** — Address and beat counters: D-flip-flop banks with full-adder incrementers and terminal-count comparators (XNOR per bit into an AND tree). Standard construction.
+- **Adder tree** — Embedding reduction and address generation adders: full-adder cells in ripple or lookahead arrangement, from the primer's leaf cell. Standard construction.
+- **Mux / steering** — Data steering is mux trees plus arbiters — and an arbiter at gate level is a priority-encoder tree of AND/OR gates with a grant register. Standard construction.
+
+SparseCore internals are unpublished even at block level (Level-3 fact record: unverifiable), so its Level-4 decomposition is standard construction throughout — the primitives are named from the architecture's documented role, their gates from the textbook.
+
+### Apple Firestorm — M1
+
+#### Down to the gates: The wide front end and the ~630-entry reorder buffer — at the primitive level
+
+- **FIFO / queue** — The ROB as a circular queue at gate level: entry storage in flop/latch arrays, head and tail pointer counters (D flip-flops + incrementers), and wrap/full comparators (XNOR gates per bit + AND tree). Standard construction — Apple publishes nothing, and even the ~630-entry depth is a microbenchmark measurement, not a specification.
+- **Register file** — Rename storage at gate level is latch/flop cells behind mux trees: every read port costs a full N:1 mux per bit — transmission-gate or NAND trees — which is why port count, not capacity, prices a register file. Apple's cell style and port count are unpublished. Standard construction.
+- **CAM** — Wakeup is the primer's CAM cell built from flops: per entry, tag storage plus one XOR compare gate per tag bit, all bits wired-NOR onto a matchline whose discharge says ‘my producer fired’. Queue partitioning and entry counts are inferred from measurements, not published. Standard construction.
+- **Priority encoder** — Oldest-first select is a priority network: AND/OR prefix trees computing the highest-priority ready request, plus a valid gate. Ripple priority chains are too slow at this width, so tree structures are the textbook answer. Standard construction.
+- **Mux** — Bypass/forwarding muxes: transmission-gate 2:1 trees (2 transistors per leg) fanning every producer result to every consumer input — the wiring that makes a 630-entry window usable. Radix unpublished. Standard construction.
+- **Comparator** — The branch predictor's tag compares are XNOR trees; its direction counters are saturating up/down counters — a few flip-flops, a tiny adder/subtractor, and saturation comparators clamping at the rails. Predictor structure is wholly unpublished. Standard construction.
+- **Barrel shifter / adder tree** — Inside the ALUs and the NEON pipes: adders are full-adder cells grouped by carry-lookahead prefix networks (AND/OR trees); shifters are log2(W) stages of 2:1 muxes. Standard construction.
+- **Counter** — Fetch sequencing runs on a program-counter register plus an adder — full-adder cells with lookahead — and muxes choosing between sequential, predicted and redirect targets. Standard construction.
+
+Honesty: Apple has published no internal structure for Firestorm at any level — block, primitive or gate. Every gate structure above is standard construction; the only numbers anywhere in this entry are microbenchmark measurements (unverifiable, fact records). Nothing here is an Apple fact (new Level-4 fact record: unverifiable).
+
+### Cerebras WSE-2
+
+#### Down to the gates: The dataflow core — and its 5-port router
+
+- **SRAM bank** — Each core's 48 KB is 6T SRAM cells (primer, bottom layer) behind NAND-tree row decoders, transmission-gate column muxes and latch-type sense amplifiers — replicated across ~850,000 cores to make the published 40 GB total. Cerebras publishes the capacity and its single-cycle-access role (Level-3 fact records); the macro internals are standard construction.
+- **Register file** — A small latch-based file: cross-coupled latch cells with mux-tree read ports — cheap at this size, and per-core rather than shared. Standard construction.
+- **Multiplier array — a row, not a grid** — The core's FP16 multiply-accumulate at gate level: AND-gate partial products, a full-adder compressor tree, a final carry-propagate adder, plus exponent add and align/normalize mux networks for FP32 accumulation — the primer's leaf cells, one lane wide. Standard construction.
+- **FSM / controller** — Dataflow firing control is an FSM: D-flip-flop state bits, NAND/NOR next-state logic, and comparators testing whether a microthread's operands have arrived. Standard construction.
+- **Comparator** — Tag and colour matching: XNOR equality trees over the colour bits, and threshold compares riding a subtractor's carry chain. Standard construction.
+- **Mux — the router** — The 5-port router's datapath is muxes: per output port a 5:1 mux — transmission-gate legs, 2 transistors each — selecting among the input ports under arbiter grants, with colour filtering as AND gates on tag-compare results. Port and colour counts are published (Level-3 fact records); the gate form is standard construction.
+- **FIFO / queue** — Per-virtual-channel queues: flop or SRAM storage, write/read pointer counters (flip-flops + incrementers), XNOR+AND full/empty comparators. Depths are not published. Standard construction.
+- **Credit counter** — One counter per channel: a flip-flop register with a full-adder increment/decrement path and a zero-detect NOR tree that gates transmission when credits run out. Standard construction.
+
+Honesty: Cerebras is unusually open at primitive level (ports, colours, per-core SRAM — Level-3 fact records) and silent at gate level like everyone else. Everything below the primitive level above is standard construction (new Level-4 fact record: unverifiable).
+
+### Broadcom Tomahawk 5 (BCM78900)
+
+#### Down to the gates: The shared packet buffer — and the traffic manager around it
+
+- **SRAM bank** — The shared buffer is banks of 6T SRAM cells (primer, bottom layer): NAND-tree row decoders, cell arrays, transmission-gate column muxes, latch-type sense amplifiers. The buffer's bandwidth — write once, read once, at 51.2 Tbps aggregate — is what replaces a crossbar. Capacity, cell size and banking are not published. Standard construction.
+- **Crossbar — deliberately absent** — The one primitive in this decomposition with no gate level to describe: a crossbar would be an N×N array of transmission-gate crosspoints plus per-output arbiters, and Tomahawk's shared-buffer architecture deletes exactly that array. The absence is the published architecture (Level-3 fact records); there is no hidden crossbar netlist to reconstruct.
+- **FIFO / queue** — Per-port, per-class queues at gate level: packet descriptors in SRAM or flop storage, head/tail pointer counters, and admission-threshold comparators — magnitude compares on a subtractor carry chain — deciding whether a new packet may claim shared-pool space. Queue counts and depths are not published. Standard construction.
+- **Switch arbiter** — The traffic manager's grant logic is priority-encoder trees (AND/OR prefix networks) with round-robin mask registers, pipelined through flip-flops because a combinational grant across 64 ports of demand cannot close timing at line rate. The arbitration algorithm is not published. Standard construction.
+- **TCAM / hash tables** — Where TCAM is used, the leaf cell is the primer's ≈16-transistor TCAM cell — two storage cells plus XOR compare driving a precharged matchline. Hash-based tables are SRAM banks behind XOR-tree hash logic with comparator chains resolving bucket matches. Broadcom publishes neither table sizes nor the split between the two. Standard construction.
+- **Comparator** — Cognitive Routing's steering decisions are magnitude comparators: link-utilization counters subtracted on a full-adder carry chain, the borrow bit steering the flowlet. Thresholds and counter widths are not published. Standard construction.
+- **Counter** — Telemetry is counters all the way down: flip-flop registers with full-adder incrementers, plus snapshot registers — parallel-load flip-flops — so software can read a coherent value without stopping the count. Standard construction.
+- **FSM / controller — as processors** — The six on-chip Arm cores stop this decomposition honestly: they are licensed CPU cores, and their gate level is Arm's netlist, not Broadcom's published material. The primer's cells are certainly inside them; no public source decomposes these instances, so Level-4 does not pretend to.
+
+Honesty: Broadcom publishes radix, rates and the shared-buffer architecture. Every gate structure above is standard construction; nothing is Broadcom's netlist (new Level-4 fact record: unverifiable).
+
+### Scan Design & ATPG Architecture
+
+#### Down to the gates: The scan chain — and the EDT wrapped around it
+
+- **Mux** — The defining gate-level act of scan design: one 2:1 mux in front of every flip-flop's D input, selecting functional data or scan data under scan-enable — a transmission-gate pair (2 transistors per leg) or a NAND-gate mux inside the library cell. Scan flop = mux + master–slave D flip-flop ≈ 26–36 transistors in typical libraries (textbook range). Unlike every other entry in this pass, this structure is not a reconstruction: mux + DFF is the published, standardised definition of a scan cell.
+- **FIFO / shift register** — The chain adds no storage at gate level at all: each scan flop's output wires to the next flop's scan input, so the shift register is the mission-mode flops themselves, reconfigured. What the chain does add is toggling — every shift clock moves data through every flop in the chain, which is why test power can exceed functional power.
+- **Adder tree — as an XOR tree** — EDT decompressors and MISR compactors are XOR trees: XOR gates (≈10–12 transistors each, primer) combining chain outputs, and in the MISR one flip-flop per bit with XOR feedback taps placed by the signature polynomial (LFSR theory). The gate structure is textbook-standard; the compression ratio is a tool setting, not an architecture constant.
+- **Comparator** — Response checking is an equality comparator: XNOR gates per bit feeding an AND tree, comparing shifted-out data or the final MISR signature against the simulated good-machine value — on the tester, or on-chip in LBIST. Standard construction.
+- **FSM / controller** — Test-mode control and the on-chip clock controller (OCC): flip-flop state bits plus synthesized NAND/NOR logic; the OCC's single at-speed capture pulse comes from a small flop-and-gate pulse generator clocked by the functional clock. Tool-generated per design; the structure is textbook-standard.
+- **Counter** — Shift counters and pattern counters: flip-flop banks with full-adder incrementers and XNOR+AND terminal-count comparators. Widths follow chain length and pattern count — per design. Standard construction.
+- **Synchronizer** — Test and functional clocks meet under glitch-free clock muxing — AND/OR clock gates whose enables change only while the clock is low, driven through 2-flop synchronizers — so slow shift and at-speed capture never tear. Standard construction.
+
+Scan inverts this zoo's usual honesty problem: the gate-level structure (mux + flip-flop, XOR compaction, clock control) is the published standard construction of the technique itself, defined by IEEE practice and every DFT textbook. What stays per-design and unpublished is only sizing — chain counts, lengths, compression ratios (Level-3 fact record).
+
+### Intel 4004
+
+#### Down to the gates: The address register — program counter and 3-level stack as a dynamic RAM array
+
+- **Dynamic RAM cell array (storage)** — PUBLISHED — the exception in this whole pass: the MCS-4 manual states the address register is a dynamic RAM cell array of 4 x 12 bits, one level holding the program counter and three forming the stack (verified — fact records). Storage is charge held on a node, refreshed by cycling — not a static latch. NOT published: the per-cell transistor schematic. In 1971 PMOS practice a dynamic cell is one to three transistors storing charge on a capacitance; that cell-level picture is standard construction for the era, labelled as such.
+- **Mux** — PUBLISHED (verified — fact records): the stack address, provided by the effective address counter and by the refresh counter, is multiplexed to the address-register decoder. The manual names the mux and its two sources; its transistor form — PMOS pass gates or NAND-gate select logic — is not published and is standard construction.
+- **Counter** — The refresh counter is load-bearing in a dynamic design: PUBLISHED (verified) that reset must be applied for at least 8 full instruction cycles (64 clock cycles) to allow the index register refresh counter to scan all locations. The counter's own structure — flip-flops plus an incrementer — is standard construction, and its width is not published (unverifiable — fact records).
+- **Register (address buffer)** — PUBLISHED (verified): the fetched address is stored in an address buffer and is demultiplexed to the internal bus during A1, A2, and A3 in three 4-bit slices. The buffer's cell structure is not published — in a dynamic PMOS chip it is most plausibly dynamic latches, but that is inference, labelled standard construction, not a manual claim.
+- **Demux** — Steering one value onto one of several destinations under the cycle-phase signals: at gate level, pass gates or AND-gate trees gated by decoded phase lines. The three-slice demultiplexing behaviour is published (verified, above); the gate form is standard construction.
+- **Adder (carry-look-ahead incrementer)** — PUBLISHED (verified): the address is incremented by a 4-bit carry look-ahead circuit (address incrementer) — genuine lookahead, in 1971, where the main adder (below) is plain ripple. Gate level, lookahead means generate/propagate terms combined in an AND/OR prefix network ahead of the sum XORs; the manual publishes that the circuit IS lookahead, not its netlist, so the prefix-network picture is standard construction fitted to a published fact.
+- **FSM / controller** — Control is hardwired phase logic: the 8-clock instruction cycle (A1–A3, M1–M2, X1–X3) is generated by flip-flop phase stages with decode gates driving the datapath — no microcode, no ROM sequencer. The phase structure is published in the manual's cycle description; the gate form is standard construction.
+- **Amplifier & mux (output driver)** — PUBLISHED (verified): each data bus output buffer has three possible states — ‘1’, ‘0’ and floating — tri-state drivers, so exactly one buffer drives a shared bus line at a time. In PMOS these are the largest devices on the die, sized to charge the external bus capacitance; device sizing is not published.
+
+Published vs constructed, stated plainly: the manual publishes this block's organisation — dynamic RAM array, stack-address mux, refresh counter, three-slice demultiplexing, lookahead incrementer, tri-state drivers — and every one of those claims is verified in the fact records. It publishes no transistor schematic, so every PMOS cell form above is standard construction for the era.
+
+#### Down to the gates: The 4-bit adder, accumulator and decimal-adjust ROMs
+
+- **Adder (ripple-through-carry)** — PUBLISHED (verified): the 4-bit adder is of the ripple-through carry type — four full-adder cells in a chain, the carry rippling bit to bit, one operand from the ADB register and the other from the accumulator and carry (also manual-published). The full-adder cell itself bottoms out in the primer's XOR/AND/OR structure — in 1971 PMOS, ratioed and dynamic gate forms rather than modern complementary static CMOS. That transistor-level form is standard construction for the era, not published.
+- **Register (ADB buffer register)** — PUBLISHED (verified): one term of the addition comes from the ADB register, which communicates with the internal bus on one side and can transfer data to the adder — a 4-bit staging register between bus and adder. Its cell structure is not published — standard construction.
+- **Register file (dynamic RAM array)** — PUBLISHED (verified): the index register is a dynamic RAM cell array of 16 x 4 bits and has two modes of operation — sixteen 4-bit registers or eight pairs, stored as dynamic charge like the address register and kept alive by the same refresh mechanism. The cell schematic is not published; the array organisation is.
+- **Mux & shifter** — PUBLISHED (verified): the accumulator is provided with a shifter to implement rotate right and rotate left instructions, and the instruction register loads from the bus through a multiplexer. A 4-bit rotate shifter at gate level is a handful of pass-gate muxes selecting each bit's neighbour; the mux/shifter functions are published, their gate forms are standard construction.
+- **ROM (lookup table)** — PUBLISHED (verified): the special ROMs perform a code conversion for DAA (decimal adjust accumulator) and KBP (keyboard process) instructions. A ROM at gate level is a decoder — an AND/NAND tree over the input bits — driving an array where a transistor present at an intersection stores a 1: the table IS the transistor pattern. The special ROMs' dimensions are not published (unverifiable — fact records); the ROM structure is standard construction.
+- **Comparator** — PUBLISHED (verified): the condition logic senses ADD = 0 and ACC = 0 conditions, the state of the carry FF, and the state of an external signal (TEST) to implement JCN and ISZ. Zero-detect at gate level is a NOR tree over the register's bits — every bit must be 0 for the output to rise. Function published; gate form standard construction.
+- **Flip-flop (1-bit registers)** — The carry flag and the double-cycle flag are 1-bit state: PUBLISHED (verified) that a double cycle FF is set from any one of 5 double-length instructions. In a dynamic PMOS design these flags are dynamic latch stages, not the ≈20–28-transistor static CMOS D flip-flop of the primer — the primer's cell is the modern form; the 4004's exact cell schematics are not published.
+- **FSM / controller** — Decode is hardwired: PUBLISHED (verified) that each instruction word divides into an upper 4-bit OPR field (operation code) and a lower 4-bit OPA field (modifier), and those fields feed decode gates that drive the datapath directly — there is no microcode ROM anywhere in the 4004. Gate form standard construction.
+
+The 4004 is the exception that proves this zoo's rule: its 1973 manual genuinely publishes gate-adjacent structure — dynamic RAM arrays, a ripple-carry adder, a lookahead incrementer, tri-state bus drivers — and every such claim above is verified in the fact records with the manual's exact words. What even Intel never published is transistor schematics, so every PMOS cell form above is labelled standard construction for the era. (New Level-4 fact record scopes exactly this boundary.)
+
+**New fact records added in this run** (appended to `files/fact-records.json`; statuses per the fact standard):
+
+- [unverifiable] **NVIDIA Hopper H100** — Level-4 gate-level structure not published by NVIDIA; decomposition is standard textbook construction throughout.
+- [unverifiable] **Google TPU v4** — Level-4 gate-level structure not published in the ISCA 2023 paper or elsewhere; standard construction throughout.
+- [unverifiable] **Apple Firestorm — M1** — No primary source exists at any level; Level-4 is standard construction throughout, sizes rest on microbenchmark measurements.
+- [unverifiable] **Cerebras WSE-2** — Primitive-level parameters published (Level-3 records) but no gate-level structure; standard construction below the primitive level.
+- [unverifiable] **Broadcom Tomahawk 5 (BCM78900)** — Gate-level structure not published by Broadcom; standard construction throughout.
+- [unverifiable] **Scan Design & ATPG Architecture** — The scan cell’s gate structure (mux + D flip-flop) is the standardised definition of the technique, not a vendor netlist; per-design sizing unpublished.
+- [verified] **Intel 4004** — Level-4 boundary: the MCS-4 User’s Manual publishes gate-adjacent organisation (dynamic RAM cell arrays, ripple-through-carry adder, carry look-ahead incrementer, tri-state output buffers) but no transistor schematics; PMOS cell forms labelled standard construction. Source: Intel MCS-4 User’s Manual (1973), §III.
