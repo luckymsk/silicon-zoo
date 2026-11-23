@@ -5211,6 +5211,652 @@
       "quote": "The address register is a dynamic RAM cell array of 4 x 12 bits. It contains one level used to store the instruction address (program counter) and 3 levels used as a stack for subroutine calls.",
       "date_checked": "2026-11-22",
       "notes": "Recorded during the first Level-4 pass (2026-11-22) to scope exactly which Level-4 claims about the 4004 are chip facts (the published organisation, each item also carried in its own Level-2/Level-3 record) and which are era-standard construction (every PMOS cell form)."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Decode ROM row format: each row matches instruction-register bits plus the cooked group input G plus the timing state T; G1 = IR0, G2 = IR1, G3 = !IR0 & !IR1",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "G1 = IR0, G2 = IR1, G3 = !IR0 & !IR1",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502 project — 6502/6507 Decode ROM transcription",
+        "publisher": "visual6502.org (NESdev wiki mirror)",
+        "url": "https://www.nesdev.org/wiki/Visual6502wiki/6507_Decode_ROM",
+        "locator": "Decode ROM format — the G input"
+      },
+      "quote": "The second column is the \"G\" input, it must match 1, 2, 3 or it's a don't care. G is derived from the lower two bits of the IR:",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact. The G formulas are the code block immediately following this sentence on the page."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Opcode low bits 11 turn on both G1 and G2, so G=1 and G=2 rows fire together — the mechanism behind undocumented opcodes (LAX = LDA + LDX)",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "G=11 fires both G1 and G2 rows; LAX ($AF) is LDA ($AD) + LDX ($AE)",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502 project — 6502/6507 Decode ROM transcription",
+        "publisher": "visual6502.org (NESdev wiki mirror)",
+        "url": "https://www.nesdev.org/wiki/Visual6502wiki/6507_Decode_ROM",
+        "locator": "About G, and how it explains many illegal opcodes"
+      },
+      "quote": "So in order to simplify the G encoding, 11 has both G1 and G2 turned on, so all G=1 and G=2 lines fire.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "The PLA takes T0–T5 as timing inputs; a separate T1F signal drives the SYNC pin; BRK uses VEC0/VEC1 instead of a T6 and RMW instructions add SD1/SD2 cycles",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "PLA timing inputs T0–T5; T1F on SYNC; VEC0/VEC1 for BRK; SD1/SD2 for RMW",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 State Machine",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_State_Machine.html",
+        "locator": "Timing states"
+      },
+      "quote": "The PLA has T0,T1,T2,T3,T4,T5 as inputs.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact. The VEC0/VEC1 and SD1/SD2 states are described in the same section of the page."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Predecode is the only decoding that sees an instruction during the two cycles before its T0/T1 states",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Only predecode sees the instruction during the two cycles before T0/T1",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 State Machine",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_State_Machine.html",
+        "locator": "Instruction fetch overlap"
+      },
+      "quote": "None of the decoding (except the predecode) sees the instruction during the two cycles that come before this; instead, T01 and T1F are used.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "The middle third of the die is random logic doing additional decoding between the PLA and the datapath",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Middle third of die: additional-decoding random logic between PLA and datapath",
+      "source": {
+        "type": "primary",
+        "title": "The 6502 CPU's overflow flag explained at the silicon level",
+        "publisher": "Ken Shirriff, righto.com",
+        "url": "https://www.righto.com/2013/01/",
+        "locator": "The 6502 microprocessor chip — die overview"
+      },
+      "quote": "Approximately top fifth of the chip (with the regular rectangular pattern) is the PLA that decodes instructions. The middle third is a bunch of logic, mostly to do additional decoding of instructions.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "All datapath control signals are latched during phi2; they are set mostly from opcode and timing data, but also some internal state",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Datapath control signals latched during phi2",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "Datapath control signals"
+      },
+      "quote": "All datapath control signals are latched during phi2; they are set mostly from opcode and timing data, but also some internal state.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "The PC incrementer has no internal latches; the incremented value is put directly on ADL/ADH",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "16-bit PC incrementer with no internal latches; output directly onto ADL/ADH",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "The Program Counter"
+      },
+      "quote": "When incrementing, the new value is put on ADL,ADH because there are no internal latches in the PC incrementer.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "All internal buses (SB, DB, ADL, ADH) are driven high during phi2 as a precharge",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Internal buses SB, DB, ADL, ADH precharged high during phi2",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "Precharge"
+      },
+      "quote": "All internal busses (SB, DB, ADL, ADH) are driven high during phi2, as a sort of precharge.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "ALU input selection: two options on one side (SB/ADD, 0/ADD), three on the other (nDB/ADD, DB/ADD, ADL/ADD)",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "A-side 2:1 mux (SB/ADD, 0/ADD); B-side 3:1 mux (nDB/ADD, DB/ADD, ADL/ADD)",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "ALU inputs"
+      },
+      "quote": "SB/ADD, 0/ADD, nDB/ADD, DB/ADD, ADL/ADD Two options for one side, three for the other.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "ALU operation selects: ANDS, EORS, ORS, 1/ADDC, SRS, SUMS, DAA, DSA",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Eight ALU operation-select signals: ANDS, EORS, ORS, 1/ADDC, SRS, SUMS, DAA, DSA",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "ALU operation selection"
+      },
+      "quote": "ANDS, EORS, ORS, 1/ADDC, SRS, SUMS, DAA, DSA Select the ALU operation.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "The ALU output register ADD is written during phi2; its lines pass through the decimal adjust before reaching the accumulator",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "ADD written during phi2; lines 1-3 and 5-7 pass through the decimal adjust before the accumulator",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "ALU output register"
+      },
+      "quote": "Lines 1-3,5-7 are fed through the decimal adjust first, to finish the proper BCD add/subtract result if necessary, before writing it to the accumulator.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact. ADD being written during phi2 is stated in the same section."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Decimal adjustment is five pulldown transistors: three for ADC (t2750, t2202, t2556) and two for SBC (t1329, t3212); removing them disables decimal mode",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "5 pulldown transistors total for decimal adjust (3 ADC, 2 SBC)",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502DecimalMode",
+        "publisher": "NESdev wiki (visual6502 project)",
+        "url": "https://www.nesdev.org/wiki/Visual6502wiki/6502DecimalMode",
+        "locator": "Decimal mode and the NES' RP2A03G"
+      },
+      "quote": "With visual6502 and images from Quietust's investigation of the 2A03 we can see that a small number of changes, only to the polysilicon mask, disable the decimal adjustment by removing 5 transistors.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact. The per-signal transistor names (t2750, t2202, t2556 for DAA; t1329, t3212 for DSA) are named in the same section."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Overflow reuses the ALU's NAND/NOR of the operands' top bits: V = not(((A7 NOR B7) and C6) NOR ((A7 NAND B7) NOR C6))",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "V = not(((A7 NOR B7) and C6) NOR ((A7 NAND B7) NOR C6))",
+      "source": {
+        "type": "primary",
+        "title": "The 6502 CPU's overflow flag explained at the silicon level",
+        "publisher": "Ken Shirriff, righto.com",
+        "url": "https://www.righto.com/2013/01/",
+        "locator": "Gate-level implementation"
+      },
+      "quote": "Since the values of NAND(a7, b7) and NOR(a7, b7) are already available in the ALU (Arithmetic-Logic Unit) for other purposes, the actual overflow circuit is simply the three gates on the right.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 primitives fact. The formula itself is stated in the same article's overflow-formula section."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Level-3 boundary: primitive-level parameters not published for the 6502 — PLA transistor count per row, T-state shift-register latch count, random-logic gate count, ALU gate-level adder schematic and transistor count, predecode-register width",
+      "status": "unverifiable",
+      "previous_value": null,
+      "current_value": "Parameters not published; decomposition names primitives and roles only",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath",
+        "publisher": "visual6502.org (VisualChips wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "Whole page"
+      },
+      "quote": null,
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 honesty record, in the pattern of the Intel 4004 Level-3 run: the visual6502 transistor-level netlist exists, but no named gate-level schematic or per-block parameter set is published, so this decomposition invents none."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Transistor count: 4,528 total — 3,510 enhancement transistors and 1,018 depletion pull-up transistors",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "4,528 transistors (3,510 enhancement + 1,018 depletion pull-ups)",
+      "source": {
+        "type": "primary",
+        "title": "The 6502 microprocessor chip (overflow flag explained at the silicon level)",
+        "publisher": "Ken Shirriff, righto.com",
+        "url": "https://www.righto.com/2013/01/",
+        "locator": "Section 'The 6502 microprocessor chip'"
+      },
+      "quote": "The 6502 chip is made up of 4528 transistors (3510 enhancement transistors and 1018 depletion pullup transistors).",
+      "date_checked": "2026-11-22",
+      "notes": "Level-4 record: the chip total that bounds every gate-level decomposition of the 6502."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "NMOS gate structure: a logic gate is a network of pull-down transistors and a single pull-up; the pull-up is a depletion-mode device with its gate connected to the gate's output",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Pull-down network + one depletion-mode pull-up per gate",
+      "source": {
+        "type": "primary",
+        "title": "NMOS Depletion Mode Transistors",
+        "publisher": "VisualChips (visual6502.org wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-NMOS_Depletion_Mode_Transistors.html",
+        "locator": "Opening section"
+      },
+      "quote": "The usual circuit design of a logic gate in NMOS technology is a network of pull-down transistors and a single pull-up.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-4 record: the technology frame for every gate-level claim about the 6502 — no PMOS anywhere on the die."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Original 650X schematics represent the decode ROM as Xs on a grid marking pulldown transistors",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Decode ROM drawn as a grid of pulldown transistors",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki/650X Schematic Notes",
+        "publisher": "NESdev Wiki (visual6502 project)",
+        "url": "https://www.nesdev.org/wiki/Visual6502wiki/650X_Schematic_Notes",
+        "locator": "Overview section"
+      },
+      "quote": "The chip design is mostly represented as logic gates, as transistors, and in the case of the decode ROM as Xs on a grid to mark pulldown transistors.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-4 record: the ROM-as-transistor-pattern fact. The Rev. C blueprints are preliminary and their PLA line ordering differs from the Rev. D production chip, so the fact is the representation, not a per-row transistor table."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "The overflow circuit's actual transistor-level implementation is published: NAND of A7/B7 in three transistors, NOR of A7/B7 in three transistors, overflow circuit in a three-transistor NOR plus a four-transistor AND/NOR circuit",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Overflow circuit published at transistor level (3 + 3 + 3 + 4 transistors)",
+      "source": {
+        "type": "primary",
+        "title": "The 6502 microprocessor chip (overflow flag explained at the silicon level)",
+        "publisher": "Ken Shirriff, righto.com",
+        "url": "https://www.righto.com/2013/01/",
+        "locator": "Section 'Transistor-level implementation'"
+      },
+      "quote": "The circuit above shows the actual implementation of the overflow circuit in the 6502 using NMOS transistors.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-4 record: the one published transistor-level schematic for a part of the 6502; the decomposition's gate-level claims for the flag-generation comparator rest on this."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Overflow final stage: four transistors implement an AND gate and NOR gate in a single circuit",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "4 transistors, combined AND + NOR",
+      "source": {
+        "type": "primary",
+        "title": "The 6502 microprocessor chip (overflow flag explained at the silicon level)",
+        "publisher": "Ken Shirriff, righto.com",
+        "url": "https://www.righto.com/2013/01/",
+        "locator": "Section 'Transistor-level implementation'"
+      },
+      "quote": "The four transistors on the right implement an AND gate and NOR gate in a single circuit.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-4 record: exact transistor count for the overflow circuit's final stage."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Bus precharge transistors are enhancement mode; all pass gates are enhancement mode",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Precharges and pass gates are enhancement-mode transistors",
+      "source": {
+        "type": "primary",
+        "title": "NMOS Depletion Mode Transistors",
+        "publisher": "VisualChips (visual6502.org wiki, recovered mirror)",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-NMOS_Depletion_Mode_Transistors.html",
+        "locator": "Cases found on the 6502 / precharge note"
+      },
+      "quote": "The precharges for all four internal busses are enhancement mode.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-4 record: grounds the pass-transistor/mux gate-level claims — a 6502 pass transistor is a single enhancement switch, not a CMOS transmission gate."
+    },
+    {
+      "entry": "MOS Technology 6502",
+      "fact": "Level-4 boundary: per-primitive gate/transistor allocation not published as a citable table — PLA row transistor counts, T-state shift-register latch count, ALU gate-level adder schematic, PC incrementer carry scheme (ripple vs lookahead)",
+      "status": "unverifiable",
+      "previous_value": null,
+      "current_value": "Parameters not published; decomposition uses standard NMOS depletion-load construction fitted to published block structure, except the overflow circuit and the five decimal-adjust transistors",
+      "source": {
+        "type": "primary",
+        "title": "Visual6502wiki — 6502 datapath; righto.com overflow article",
+        "publisher": "visual6502.org; Ken Shirriff, righto.com",
+        "url": "https://gmofishsauce.github.io/v6502demo/wiki/index.php-title-6502_datapath.html",
+        "locator": "Whole pages"
+      },
+      "quote": null,
+      "date_checked": "2026-11-22",
+      "notes": "Level-4 honesty record: the visual6502 transistor-level netlist exists, but no per-block gate schematic or per-primitive parameter table is published, so this decomposition invents none; the PC incrementer carry scheme is explicitly not claimed."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Op cache organization: 64 sets x 12 ways, up to 9 macro-ops per entry, maximum capacity 6.75K ops, physically tagged",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "64 sets, 12 ways, 9 macro-ops per entry, 6.75K ops max, physically tagged",
+      "source": {
+        "type": "primary",
+        "title": "Software Optimization Guide for the AMD Zen4 Microarchitecture (publication 57647, rev 1.01, April 2023)",
+        "publisher": "AMD",
+        "url": "http://www.numberworld.org/blogs/2024_8_7_zen5_avx512_teardown/57647_zen4_sog.pdf",
+        "locator": "Section 2.9 Instruction Fetch and Decode"
+      },
+      "quote": "The Op Cache is organized as an associative cache with 64 sets and 12 ways. At each set-way intersection is an entry containing up to 9 macro ops. The maximum capacity of the Op Cache is 6.75 K ops.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: first published geometry for the op cache array; underpins the SRAM-bank primitive."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "BTB is a two-level structure; each entry holds up to two branches, and BTB pairs allow two fetches to be predicted in one prediction cycle",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Two-level BTB; two branches per entry; two fetches per prediction cycle",
+      "source": {
+        "type": "primary",
+        "title": "Software Optimization Guide for the AMD Zen4 Microarchitecture (publication 57647, rev 1.01, April 2023)",
+        "publisher": "AMD",
+        "url": "http://www.numberworld.org/blogs/2024_8_7_zen5_avx512_teardown/57647_zen4_sog.pdf",
+        "locator": "Section 2.8.1.2 Branch Target Buffer"
+      },
+      "quote": "Predicting with BTB pairs allows two fetches to be predicted in one prediction cycle.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: the two-targets-per-entry rule is the CAM primitive's packing; SOG also states 'Each BTB entry can hold up to two branches, and two pair cases are supported'."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "L1 BTB keeps 1-cycle latency and tracks up to 3,072 branch targets depending on branch density (in practice 1,024-2,048)",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "1-cycle latency; up to 3,072 targets by branch density",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Branch target buffer section"
+      },
+      "quote": "Zen 4's L1 BTB keeps the same 1 cycle latency, but improves capacity. Depending on branch density, Zen 4's L1 BTB can track up to 3072 branch targets, though in practice it'll probably be able to track 1024 to 2048 targets.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: measured, not AMD-published; consistent with 1.5K entries x 2 targets per entry."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "L2 BTB measured at 8,192 entries (up from 6,656 on Zen 3); lookup penalty cut from 3 cycles to 1 cycle",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "8,192 entries measured; 3-cycle penalty reduced to 1 cycle",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Branch target buffer section"
+      },
+      "quote": "Zen 4's L2 BTB sees a slightly size increase as well, with capacity going from 6656 entries on Zen 3 to 8192 on Zen 4. More significantly, Zen 4's L2 BTB is faster: Zen 3 suffered a three cycle penalty when it needed a branch target from its L2 BTB. Zen 4 brings that penalty down to just one cycle.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: measured capacity; see the disputed record for the conflict with AMD's 7K figure."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "L2 BTB capacity: AMD/Wikipedia 7K entries vs Chips and Cheese measured 8,192 entries",
+      "status": "disputed",
+      "previous_value": "7K entries (AMD/Wikipedia)",
+      "current_value": "8,192 entries measured (Chips and Cheese); wiki keeps 7K",
+      "source": {
+        "type": "secondary",
+        "title": "Zen 4",
+        "publisher": "Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Zen_4",
+        "locator": "Features"
+      },
+      "quote": "L2 BTB increased to 7K entries.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: AMD's Hot Chips 35 deck says L2-BTB +8% more branches, consistent with ~7K from a 6,656-entry Zen 3 base; Chips and Cheese's capacity test measured 8,192. Wiki keeps 7K; no change made."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Indirect branches get a separate indirect target array; measured tracking holds up to 3,072 targets without significant penalty",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Separate indirect target array; up to 3,072 targets tracked",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Indirect branches section"
+      },
+      "quote": "AMD's CPUs have a separate indirect target array for handling branches that go to multiple targets.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: the 3,072-target figure is from the same source: 'In our testing, Zen 4 seems to be able to track up to 3072 branch targets without significant penalty.'"
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Return stack has 32 entries; on Zen 4 a single thread can use all 32",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "32-entry return stack; single thread can use all 32",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Call and return section"
+      },
+      "quote": "Like prior Zen generations, Zen 4 has a return stack with 32 entries. However, AMD seems to have made improvements so that a single thread can use all 32 entries.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: the counter/stack primitive of the front end."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Op cache delivers 9 ops per cycle, but throughput is limited by the 6-wide renamer downstream",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "9 ops/cycle from op cache; 6-wide renamer is the limiter",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Micro-op cache section"
+      },
+      "quote": "AMD says the micro-op cache delivers 9 ops per cycle, but throughput is limited by the 6-wide renamer downstream.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: underpins the micro-op queue FIFO primitive and its 6 uops/clock metering rate."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Renamer eliminates MOVs and zeroing idioms via RAT aliasing and a zero bit; 202 of 224 integer registers measured available for speculative results",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "MOV/zeroing elimination via RAT aliasing + zero bit; 202/224 int registers for speculative results",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Renamer section"
+      },
+      "quote": "Eliminated MOVs can be handled by pointing multiple architectural registers to the same physical one, meaning that no extra physical registers have to be allocated for such MOVs. If the renamer knows a register's value has to be zero, it can remember that by setting a bit in the register alias table instead of allocating a real integer register.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: the 202-register figure is from the same source: 'We measured 202 integer registers (out of 224) available to hold speculative results, which covers 63% of ROB capacity.'"
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "ROB capacity of 320 entries confirmed by a custom test; each ROB entry can hold up to 4 NOPs",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "320 entries confirmed by measurement; up to 4 NOPs per entry",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Reorder buffer section"
+      },
+      "quote": "We used a custom test with up to 128 integer adds, 128 floating point adds, 40 stores, and 55 branches (in that order) to confirm AMD's published 320 entry ROB capacity.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: independent confirmation of the published 320-entry ROB; the 4-NOP packing is from the same source: 'Zen 4's reorder buffer is also special, because each entry can hold up to 4 NOPs.'"
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Scheduler and execution pipe layout unchanged from Zen 3; FP/vector side uses two triple-port schedulers sharing a large non-scheduling queue",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Layout unchanged from Zen 3; FP side: two triple-port schedulers + large non-scheduling queue",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Scheduler section"
+      },
+      "quote": "On the floating point and vector execution side, Zen 3 and Zen 4 retain the large non-scheduling queue found in previous Zen generations, but move from a unified quad-port scheduler to two triple port schedulers.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: the scheduler select primitive; same source also states 'Scheduler and execution pipe layout were not changed from Zen 3.' and 'A scheduling queue potentially has to check every entry every cycle, to see if it's ready to execute.'"
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Direction predictor has two overriding levels; Zen 4's L2 predictor is much larger than Zen 3's and recognises extremely long patterns",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "Two overriding levels; L2 much larger, recognises extremely long patterns",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "Branch prediction section"
+      },
+      "quote": "Like other CPUs in the Zen series, Zen 4's direction predictor has two overriding levels.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: same source: 'Zen 4 and Zen 3 seem to have similarly capable L1 predictors, but AMD has dramatically beefed up Zen 4's L2 predictor. ... It can recognize extremely long patterns and has enough storage to perform very well, even with a lot of branches in play.'"
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "512-bit instructions are kept as one micro-op through most of the pipeline, split into two 256-bit halves as late as possible",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "One micro-op through most of the pipeline; split at the execution pipe",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "AVX-512 section"
+      },
+      "quote": "Zen 4 partially breaks this tradition, by keeping instructions that work on 512-bit vectors as one micro-op throughout most of the pipeline.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: underpins the half-select mux primitive; same source: 'I assume they're broken up into two operations after they enter a 256-bit execution pipe, meaning that the instruction is split into two 256-bit halves as late as possible in the pipeline.'"
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "512-bit stores are decoded into two micro-ops and consume two store-queue entries",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "512-bit stores = two micro-ops, two store-queue entries",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "AVX-512 section"
+      },
+      "quote": "512-bit stores are an exception to the rule. They're still decoded into two micro-ops, which means they consume two valuable store queue entries.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: the exception to the one-micro-op rule; store queue is 64 entries (Level-2 record)."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Two 256-bit FMA units and four 256-bit ALUs, unchanged since Zen 2; L1D handles two 256-bit loads and one 256-bit store per cycle, unchanged from Zen 2",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "2x 256-bit FMA + 4x 256-bit ALUs; L1D 2x 256-bit loads + 1x 256-bit store per cycle",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "AVX-512 / vector execution section"
+      },
+      "quote": "Zen 2, 3, and 4 all have two 256-bit FMA units and four 256-bit ALUs.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: same source on L1D: 'Zen 4's L1D can handle two 256-bit loads and one 256-bit store per cycle, which means that vector load/store bandwidth remains unchanged from Zen 2.'"
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Mask register file supports around 52 renames measured, fewer than its 68-entry capacity",
+      "status": "verified",
+      "previous_value": null,
+      "current_value": "~52 mask renames measured (capacity 68 entries)",
+      "source": {
+        "type": "secondary",
+        "title": "AMD's Zen 4 Part 1: Frontend and Execution Engine",
+        "publisher": "Chips and Cheese",
+        "url": "https://chipsandcheese.com/p/amds-zen-4-part-1-frontend-and-execution-engine",
+        "locator": "AVX-512 section"
+      },
+      "quote": "With around 52 renames for mask registers, this register file is much smaller than what we see on Skylake-X or Ice Lake.",
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 record: measured usable count vs the 68-entry published capacity (Level-2 record); different measures, not a dispute."
+    },
+    {
+      "entry": "AMD Zen 4",
+      "fact": "Level-3 boundary: primitive-level parameters not published for Zen 4 - BTB associativity and entry layout, direction-predictor table sizes/history lengths/algorithm, op-cache and L1I banking/port counts, micro-op queue depth, scheduler queue depths and select policy, ROB lookup structure, FMA multiplier-array geometry, adder-tree depth/carry structure, FP register-file port counts, shuffle-unit crossbar radix, load/store queue lookup structure, scheduler state encoding",
+      "status": "unverifiable",
+      "previous_value": null,
+      "current_value": "Parameters not published; decomposition names primitives and roles only",
+      "source": {
+        "type": "primary",
+        "title": "AMD Next Generation 'Zen 4' Core and 4th Gen AMD EPYC 9004 Server CPU (Hot Chips 35); AMD SOG 57647; Chips and Cheese Zen 4 Part 1; mersenneforum AVX-512 teardown",
+        "publisher": "AMD; Chips and Cheese; mersenneforum",
+        "url": "http://hc2023.hotchips.org/assets/program/conference/day1/CPU1/HC_Zen4_Epyc_Final_20230825%20-%20Embargoed%20until%20Aug%2029%202023.pdf",
+        "locator": "Whole sources"
+      },
+      "quote": null,
+      "date_checked": "2026-11-22",
+      "notes": "Level-3 honesty record: AMD publishes core-level totals (op-cache size, register-file sizes, queue depths, cache sizes/latencies) but not sub-block internals; this decomposition invents none of them."
     }
   ],
   "schema": "silicon-zoo fact records v1 — one record per fact checked under Sai's fact standard (Nov 22, 2026)"
