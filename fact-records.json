@@ -22634,6 +22634,873 @@
    "quote": null,
    "date_checked": "2026-11-26",
    "notes": "Honesty record scoping the Level-2 boundary, per the wiki's fact standard. The L2 text says this plainly in both blocks. The vendor's own site (chipsnmedia.com) was unreachable during the run, so no product-page diagram could be consulted either."
+  },
+  {
+   "entry": "Chips&Media WAVE Codec IP",
+   "fact": "AV1 does not use CABAC: it uses a non-binary multi-symbol arithmetic coder (daala_ec), up to 16 symbols per step",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "AV1 uses a non-binary multi-symbol arithmetic coder (daala_ec), up to 16 symbols per step",
+   "source": {
+    "type": "article",
+    "title": "AV1 Hardware Support in 2026: Encode, Decode, Release Date",
+    "publisher": "ForaSoft",
+    "url": "https://www.forasoft.com/learn/video-encoding/articles/av1-state-2026",
+    "locator": "How AV1 Compresses: section 5, A new entropy coder — multi-symbol arithmetic"
+   },
+   "quote": "Where H.264 used CABAC (a binary arithmetic coder), HEVC kept CABAC, and VP9 used a simpler boolean arithmetic coder, AV1 introduces a non-binary multi-symbol arithmetic coder.",
+   "date_checked": "2026-11-26",
+   "notes": "Spec fact about the AV1 entropy coder, used in the Level-3 VCE register-file primitive (CABAC 127-state tables apply to the HEVC/AVC path; the AV1 path uses the multi-symbol coder and its CDF tables). Secondary source reproducing the AV1 specification; the AV1 spec itself is the underlying authority. No prior record covered the multi-symbol coder."
+  },
+  {
+   "entry": "Chips&Media WAVE Codec IP",
+   "fact": "Level-3 boundary: Chips&Media publishes no VCE/CFrame primitive-level internals — no FIFO depths, SRAM bank organisation, arbiter radix, queue depths or synchronizer depth — so Level-3 names primitives and roles only",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "press release",
+    "title": "Chips&Media WAVE627 launch release (June 2021); WAVE6 series release (January 2021); WAVE6 Gen2+ release (October 2024)",
+    "publisher": "Chips&Media",
+    "url": "https://anysilicon.com/silicon-ip-provider-chipsmedia-launches-av1-video-encoder-hardware-ip-for-4k-uhd-video-resolutions-and-beyond/",
+    "locator": "n/a"
+   },
+   "quote": null,
+   "date_checked": "2026-11-26",
+   "notes": "Honesty record scoping the Level-3 boundary, per the wiki's fact standard. The L3 text says this plainly in both blocks (per-primitive \"not published\" statements plus the block notes). The one primitive whose existence is a published WAVE fact is the CDC synchronizer between the video-engine and entropy-engine clock domains (Gen2+ release)."
+  },
+  {
+   "entry": "Chips&Media WAVE Codec IP",
+   "fact": "No gate-level structure for the VCE, the on-the-fly entropy engine or CFrame is published by Chips&Media — no netlist, standard-cell description or transistor count for any part of the WAVE codec IP; the Level-4 decomposition is the textbook-standard construction of each Level-3 primitive, not a claim about Chips&Media's circuits.",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "vendor press releases",
+    "title": "Chips&Media WAVE6 (Jan 2021), WAVE627 (Jun 2021) and WAVE6 Gen2+ (Oct 2024) releases, via Design-Reuse/AnySilicon reprints; AOMedia AV1 Bitstream and Decoding Process Specification v1.0.0",
+    "publisher": "Chips&Media; AOMedia",
+    "url": "https://www.design-reuse.com/news/9476-chips-media-adds-extraordinary-features-in-the-next-generation-video-codec-ips-introducing-the-wave6-series/",
+    "locator": "Pipeline stages, configurations and codec features at block level; no gate-level structure anywhere in the releases; codec specs define the algorithms, not the silicon"
+   },
+   "quote": null,
+   "date_checked": "2026-11-26",
+   "notes": "Level-4 boundary record, same form as the NVENC, VCN 4.0, Xe Media Engine and Spectra Level-4 records. All gate/transistor detail in the Level-4 sections is labelled textbook-standard construction in the wiki text and the corpus; no new chip-specific number is claimed. Published spec geometry reused in Level-4 (AV1 superblocks 128x128/64x64 down to 4x4, 7 reference frames, 127 CABAC states, 16 AV1 symbols per step, two clock domains, 128-bit AXI, 4K60 at 500 MHz, CFrame up to 50% bandwidth saving) was verified at Levels 2-3."
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "Next-generation CVflow splits AI work between a neural vector processor (NVP) and a floating-point general vector processor (GVP); GVP offloads classical computer vision and radar processing from the NVP engines and floating-point-intensive algorithms from the Arm CPUs",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "NVP + GVP split, GVP offloads classical CV/radar from NVP and FP-intensive work from Arm CPUs",
+   "source": {
+    "type": "vendor press release",
+    "title": "Ambarella Launches AI Domain Controller SoC Family for Single-Chip Multi-Sensor Perception, Fusion and Path Planning in ADAS to L4 Autonomous Vehicles",
+    "publisher": "Ambarella",
+    "url": "https://www.ambarella.com/news/ambarella-launches-ai-domain-controller-soc-family-for-single-chip-multi-sensor-perception-fusion-and-path-planning-in-adas-to-l4-autonomous-vehicles/",
+    "locator": "CVflow architecture paragraph; published Jan 4, 2022"
+   },
+   "quote": "This is complemented by a new floating-point general vector processor (GVP) designed to offload classical computer vision and radar processing from the NVP engines, and floating-point-intensive algorithms from the Arm CPUs.",
+   "date_checked": "2026-11-27",
+   "notes": "Level-2 record. NVP is also enhanced to run Oculii adaptive AI radar software per the same release."
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "CV3 family AI performance up to 500 eTOPS, a 42x increase over Ambarella's prior automotive family; up to 30x CPU performance boost",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Up to 500 eTOPS; 42x AI increase; 30x CPU boost over prior automotive family",
+   "source": {
+    "type": "vendor press release",
+    "title": "Ambarella Launches AI Domain Controller SoC Family for Single-Chip Multi-Sensor Perception, Fusion and Path Planning in ADAS to L4 Autonomous Vehicles",
+    "publisher": "Ambarella",
+    "url": "https://www.ambarella.com/news/ambarella-launches-ai-domain-controller-soc-family-for-single-chip-multi-sensor-perception-fusion-and-path-planning-in-adas-to-l4-autonomous-vehicles/",
+    "locator": "Lead paragraph; published Jan 4, 2022"
+   },
+   "quote": "This fully scalable, power-efficient CVflow® family of SoCs provides the automotive industry's highest AI processing performance, at up to 500 eTOPS, representing a 42x increase over Ambarella's prior automotive family.",
+   "date_checked": "2026-11-27",
+   "notes": "Level-2 record. The 500 eTOPS figure itself was already recorded at launch; the 42x generational claim and 30x CPU claim are new in this run."
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "Typical L2+ deployment sensor suite is 10 cameras, five radar modules and numerous ultrasonic sensors; higher-performance stereo and dense optical flow engines provide greater depth and motion perception",
+   "status": "verified",
+   "previous_value": null,
+   "current_value": "Typical L2+ suite: 10 cameras, 5 radar modules, numerous ultrasonic sensors; stereo + dense optical flow engines",
+   "source": {
+    "type": "vendor press release",
+    "title": "Ambarella Launches AI Domain Controller SoC Family for Single-Chip Multi-Sensor Perception, Fusion and Path Planning in ADAS to L4 Autonomous Vehicles",
+    "publisher": "Ambarella",
+    "url": "https://www.ambarella.com/news/ambarella-launches-ai-domain-controller-soc-family-for-single-chip-multi-sensor-perception-fusion-and-path-planning-in-adas-to-l4-autonomous-vehicles/",
+    "locator": "ISP paragraph; published Jan 4, 2022"
+   },
+   "quote": "By simultaneously supporting up to 12 physical or 20 virtual cameras, a single CV3 can process the entire sensor suite, which for typical L2+ deployments includes 10 cameras, five radar modules and numerous ultrasonic sensors.",
+   "date_checked": "2026-11-27",
+   "notes": "Level-2 record. The 12 physical / 20 virtual camera counts were already recorded at launch; the L2+ suite composition and stereo/optical-flow engines are new in this run."
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "NVP delivers 1,000 eTOPS at 4-bit precision; CV3-High consumes about 50 W",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "trade press reporting vendor claim",
+    "title": "Ambarella Targets AV Domain Controllers with Next-Gen AI Engine",
+    "publisher": "EE Times",
+    "url": "https://www.eetimes.com/ambarella-targets-av-domain-controllers-with-next-gen-ai-engine/",
+    "locator": "NVP performance and power paragraphs, quoting Ambarella"
+   },
+   "quote": null,
+   "date_checked": "2026-11-27",
+   "notes": "Level-2 record. EE Times reports Ambarella's figures (500 eTOPS 8-bit / 1,000 eTOPS 4-bit; CV3-High about 50 W, four times the performance-per-watt of prior generations); no Ambarella primary text stating the 4-bit figure or the 50 W figure was obtained in this run, so the record is unverifiable per the fact standard and carries no quote."
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "Oculii centralized 4D imaging radar on CV3: 0.5-degree angular resolution, dense point cloud of tens of thousands of points per frame, detection range over 500 metres, up to 100x the performance of traditional edge radar processors",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "trade press reporting vendor claim",
+    "title": "Ambarella Disrupts 4D Imaging Automotive Radar with Centralized Approach",
+    "publisher": "All About Circuits",
+    "url": "https://www.allaboutcircuits.com/news/ambarella-disrupts-4d-imaging-automotive-radar-with-centralized-approach",
+    "locator": "Centralized radar performance paragraphs, quoting Ambarella"
+   },
+   "quote": null,
+   "date_checked": "2026-11-27",
+   "notes": "Level-2 record. Figures are Ambarella's claims as reported by All About Circuits; no Ambarella primary text stating the 0.5-degree, point-count, range or 100x figures was obtained in this run, so the record is unverifiable per the fact standard and carries no quote."
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "Level-2 boundary: Ambarella publishes no NVP block diagram, MAC-array dimensions, vector width, SRAM sizes, queue depths or per-stage latencies, and no ISP block diagram, per-camera line buffers, queue depths or HDR merge stage counts",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "vendor press releases",
+    "title": "Ambarella CV3 launch release (Jan 4, 2022) and CV3-AD685 announcement (Jan 5, 2023)",
+    "publisher": "Ambarella",
+    "url": "https://www.ambarella.com/news/ambarella-launches-ai-domain-controller-soc-family-for-single-chip-multi-sensor-perception-fusion-and-path-planning-in-adas-to-l4-autonomous-vehicles/",
+    "locator": "No block diagram, queue depths, stage counts or per-stage latencies anywhere in the launch material"
+   },
+   "quote": null,
+   "date_checked": "2026-11-27",
+   "notes": "Level-2 boundary record, same form as the Qualcomm Spectra Level-2 boundary record. All L2 sub-block organization is the split/pipeline the launch material names; no die internals are claimed."
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "Level-3 boundary (CVflow NVP/GVP): Ambarella publishes no primitive-level geometry for CVflow — no MAC-array dimensions, no vector width, no SRAM sizes, no queue depths, no per-stage latencies — so every Level-3 primitive in the NVP/GVP block is mapped from the published NVP/GVP split and the five-step pipeline, not from a die diagram",
+   "notes": "Level-3 boundary record, same form as the Level-2 boundary record. Generic constructions are labelled standard construction in the wiki text; the zero-skip comparator role is standard construction, not a published CV3 fact.",
+   "previous_value": null,
+   "quote": null,
+   "source": {
+    "locator": "No block diagram, MAC-array dimensions, vector width, SRAM sizes, queue depths or per-stage latencies anywhere in the launch material",
+    "publisher": "Ambarella",
+    "title": "Ambarella Launches AI Domain Controller SoC Family for Single-Chip Multi-Sensor Perception, Fusion and Path Planning in ADAS to L4 Autonomous Vehicles",
+    "type": "vendor press release",
+    "url": "https://www.ambarella.com/news/ambarella-launches-ai-domain-controller-soc-family-for-single-chip-multi-sensor-perception-fusion-and-path-planning-in-adas-to-l4-autonomous-vehicles/"
+   },
+   "status": "unverifiable"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "Level-3 boundary (ISP): Ambarella publishes no primitive-level geometry for the ISP — no per-camera line buffers, no queue depths, no HDR merge stage counts, no stereo or optical-flow window sizes — so every Level-3 primitive in the ISP block is mapped from the published pipeline stages and the ISP-mandated order, not from a die diagram",
+   "notes": "Level-3 boundary record, same form as the Level-2 boundary record. Generic constructions are labelled standard construction in the wiki text; the synchronizer role at the sensor/ISP boundary is standard construction, not a published ISP fact.",
+   "previous_value": null,
+   "quote": null,
+   "source": {
+    "locator": "No ISP block diagram, per-camera line buffers, queue depths or HDR merge stage counts anywhere in the launch material",
+    "publisher": "Ambarella",
+    "title": "Ambarella Launches AI Domain Controller SoC Family for Single-Chip Multi-Sensor Perception, Fusion and Path Planning in ADAS to L4 Autonomous Vehicles",
+    "type": "vendor press release",
+    "url": "https://www.ambarella.com/news/ambarella-launches-ai-domain-controller-soc-family-for-single-chip-multi-sensor-perception-fusion-and-path-planning-in-adas-to-l4-autonomous-vehicles/"
+   },
+   "status": "unverifiable"
+  },
+  {
+   "entry": "Ambarella CV3 / CVflow",
+   "fact": "No gate-level structure for the CVflow NVP/GVP engine or the ISP is published by Ambarella — no netlist, standard-cell description or transistor count for any part of CV3; the Level-4 decomposition is the textbook-standard construction of each Level-3 primitive, not a claim about Ambarella's circuits.",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "vendor press releases",
+    "title": "Ambarella CV3 launch release (Jan 4, 2022) and CV3-AD685 announcement (Jan 5, 2023)",
+    "publisher": "Ambarella",
+    "url": "https://www.ambarella.com/news/ambarella-launches-ai-domain-controller-soc-family-for-single-chip-multi-sensor-perception-fusion-and-path-planning-in-adas-to-l4-autonomous-vehicles/",
+    "locator": "NVP/GVP split, compiled-graph execution model, Oculii radar role, 12 physical / 20 virtual cameras and ISP stages at block level; no gate-level structure anywhere in the releases"
+   },
+   "quote": null,
+   "date_checked": "2026-11-27",
+   "notes": "Level-4 boundary record, same form as the NVENC, VCN 4.0, Xe Media Engine, Spectra and WAVE Level-4 records. All gate/transistor detail in the Level-4 sections is labelled textbook-standard construction in the wiki text and the corpus; no new chip-specific number is claimed. Arithmetic reused in Level-4 (20 streams need a 5-bit counter, 12 cameras a 4-bit counter, 12:1 select is 11 2:1 muxes in 4 stages) is derived from the published stream counts verified at Levels 2-3."
+  },
+  {
+   "current_value": "We describe a computational photography pipeline that captures, aligns, and merges a burst of frames to reduce noise and increase dynamic range.",
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ merges a burst of underexposed RAW frames (align + temporal merge)",
+   "notes": "Quote corrected in the Level-2 run: the 2016 paper was read live and the abstract sentence is now the record's quote. The fact itself was already verified at launch; only the quote was missing.",
+   "previous_value": "quote: null — 'quoted here by description because the paper's text was not re-fetched verbatim in this pass'",
+   "quote": "We describe a computational photography pipeline that captures, aligns, and merges a burst of frames to reduce noise and increase dynamic range.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "corrected"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ does not use bracketed exposures; it captures frames of constant exposure set low enough to avoid blowing out highlights",
+   "notes": "Constant exposure is the key design decision: frames at different exposures are harder to align, and large exposure variation can render local alignment impossible.",
+   "previous_value": null,
+   "quote": "First, we do not use bracketed exposures. Instead, we capture frames of constant exposure, which makes alignment more robust, and we set this exposure low enough to avoid blowing out highlights.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ starts from Bayer RAW frames, not the demosaicked RGB/YUV output of a hardware ISP",
+   "notes": "RAW start gives more bits per pixel and circumvents the ISP's tone mapping and spatial denoising.",
+   "previous_value": null,
+   "quote": "Second, we begin from Bayer raw frames rather than the demosaicked RGB (or YUV) frames produced by hardware Image Signal Processors (ISPs) common on mobile platforms.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ alignment is a novel FFT-based algorithm and the merge is a hybrid 2D/3D Wiener filter",
+   "notes": "The two algorithmic cores of the pipeline, named in the abstract.",
+   "previous_value": null,
+   "quote": "Third, we use a novel FFT-based alignment algorithm and a hybrid 2D/3D Wiener filter to denoise and merge the frames in a burst.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ runs in 4 seconds on device for a 12 Mpix image, with no user intervention",
+   "notes": "The abstract's performance claim; Section 7 refines it to 2.5–4 seconds on a Snapdragon 810 depending on burst size.",
+   "previous_value": null,
+   "quote": "It runs in 4 seconds on device (for a 12 Mpix image), requires no user intervention, and ships on several mass-produced cell phones.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ input is a stream of Bayer RAW images at full sensor resolution (e.g. 12 Mpix) at up to 30 frames per second",
+   "notes": "Figure 3 caption: the same RAW stream feeds both the viewfinder pipeline and the software burst pipeline.",
+   "previous_value": null,
+   "quote": "The input to both pipelines is a stream of Bayer mosaic (raw) images at full sensor resolution (for example, 12 Mpix) at up to 30 frames per second.",
+   "source": {
+    "locator": "Figure 3 caption",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ viewfinder is 1.6 Mpix, updated at 15–30 frames per second",
+   "notes": "The hardware-ISP viewfinder is the low-resolution preview; the software pipeline only runs at the shutter press.",
+   "previous_value": null,
+   "quote": "In our current implementation the viewfinder is 1.6 Mpix and is updated at 15–30 frames per second.",
+   "source": {
+    "locator": "Figure 3 caption",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "At the shutter press the viewfinder suspends, a constant-exposure burst is captured and stored temporarily in main memory, then the software pipeline runs",
+   "notes": "The burst lives in main memory between capture and merge — the memory cost behind the 104 Mpix figure.",
+   "previous_value": null,
+   "quote": "When the shutter is pressed, this pipeline suspends briefly, a burst of frames is captured at constant exposure, stored temporarily in main memory, and the software pipeline (bottom row) is activated.",
+   "source": {
+    "locator": "Figure 3 caption",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ reference frame is the sharpest frame in a subset of the burst, chosen by a gradient metric on the green channel of the RAW input (lucky imaging)",
+   "notes": "Reference selection defends against blur from hand and scene motion; the paper does no deblurring, so the reference's sharpness is the output's sharpness.",
+   "previous_value": null,
+   "quote": "To address blur induced by both hand and scene motion we choose the reference frame to be the sharpest frame in a subset of the burst, according to a simple metric based on gradients in the green channel of the raw input.",
+   "source": {
+    "locator": "Section 4",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ reference frame is chosen from the first 3 frames in the burst, to minimise perceived shutter lag",
+   "notes": "The first-3 constraint is a latency trade: a later frame could be sharper but would delay the shot.",
+   "previous_value": null,
+   "quote": "To minimize perceived shutter lag, we choose the reference frame from the first 3 frames in the burst.",
+   "source": {
+    "locator": "Section 4",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ alignment runs at 24 milliseconds per Mpix on a mobile device",
+   "notes": "Achieved with an FFT-based acceleration of the L2 alignment cost plus careful engineering.",
+   "previous_value": null,
+   "quote": "Our alignment algorithm runs at 24 milliseconds per Mpix on a mobile device.",
+   "source": {
+    "locator": "Section 4",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ alignment is coarse-to-fine on four-level Gaussian pyramids of the RAW downsampled to gray",
+   "notes": "Downsampling averages 2x2 blocks of Bayer RGGB samples, so alignment runs on 3 Mpix grayscale instead of 12 Mpix RAW; displacements are kept to multiples of 2 pixels so displaced Bayer samples keep coincident colours.",
+   "previous_value": null,
+   "quote": "To align an alternate frame to our reference frame, we perform a coarse-to-fine alignment on four-level Gaussian pyramids of the downsampled-to-gray raw input.",
+   "source": {
+    "locator": "Section 4",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "At the finest pyramid level HDR+ tiles are 32x32 pixels with a maximum displacement of 64 pixels; the method supports displacements up to 169 pixels",
+   "notes": "The 169-pixel figure is from the same Figure 5 caption: a hierarchical algorithm is essential because the large saturated-colour regions show large displacements.",
+   "previous_value": null,
+   "quote": "At the finest pyramid level (bottom right), tiles are 32 × 32 pixels and the maximum displacement is 64 pixels.",
+   "source": {
+    "locator": "Figure 5 caption",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ merge typically uses 16x16 tiles from Bayer RAW colour planes, and 32x32 tiles for very dark scenes",
+   "notes": "Larger tiles for very dark scenes because low-frequency noise can be objectionable there.",
+   "previous_value": null,
+   "quote": "Our method typically uses 16 × 16 tiles from color planes of Bayer raw input, but for very dark scenes, for which low-frequency noise can be objectionable, we use 32 × 32 tiles instead.",
+   "source": {
+    "locator": "Section 5",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ merge pairs each reference tile with one tile from each alternate frame",
+   "notes": "Pairwise (not 3D-DFT) merging: each alternate frame is evaluated independently, so one badly aligned frame cannot poison the whole merge.",
+   "previous_value": null,
+   "quote": "In our setting, each tile in the reference is merged with one tile taken from each of the alternate frames, corresponding to the result of our alignment.",
+   "source": {
+    "locator": "Section 5",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ merge operates on tiles overlapped by half in each spatial dimension",
+   "notes": "Half-overlap with a modified raised-cosine window avoids visible discontinuities at tile boundaries in the DFT domain.",
+   "previous_value": null,
+   "quote": "Our merge method operates on tiles overlapped by half in each spatial dimension.",
+   "source": {
+    "locator": "Section 5",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ noise model: for a signal level x the noise variance is Ax + B, from the Poisson photon-counting process; A and B depend only on the shot's gain settings",
+   "notes": "The signal-dependent noise model is what lets the Wiener filter tell alignment failure apart from noise.",
+   "previous_value": null,
+   "quote": "In particular, for a signal level of x, the noise variance σ² can be expressed as Ax + B, following from the Poisson-distributed physical process of photon counting.",
+   "source": {
+    "locator": "Section 5",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ shipped on devices with 12–13 Mpix sensors, capturing bursts of up to 8 frames — as much as 104 Mpix stored and processed per output photograph",
+   "notes": "The memory/compute cost of the burst bargain, stated in Section 7.",
+   "previous_value": null,
+   "quote": "Our system has shipped on devices having 12–13 Mpix sensors, on which we capture bursts of up to 8 frames. Thus, we may be required to store and process as much as 104 Mpix per output photograph.",
+   "source": {
+    "locator": "Section 7",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "On a Snapdragon 810 a low-light HDR+ shot takes 4 seconds: 1 s capture, 500 ms alignment, 1,200 ms merge, 1,600 ms finish",
+   "notes": "Measured on a Snapdragon 810 not subject to thermal throttling; a daylight shot takes 2.5 seconds (100 ms capture, 250 ms alignment, 580 ms merge, 1,600 ms finish). The finish stage dominates both cases.",
+   "previous_value": null,
+   "quote": "For a low light shot taking 4 seconds, this breaks down as 1 second to capture the frames, 500 ms for alignment, 1200 ms for merging, and 1600 ms for finishing.",
+   "source": {
+    "locator": "Section 7",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ implements its own FFT in Halide, five times faster than FFTW on an ARM phone for the small DFTs in the pipeline",
+   "notes": "The pipeline computes many small 2D real DFTs for align and merge, so a purpose-built FFT beat the general library.",
+   "previous_value": null,
+   "quote": "For the small DFTs in our pipeline, this implementation is five times faster than FFTW on an ARM-based mobile phone.",
+   "source": {
+    "locator": "Section 7",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "HDR+ finish stage includes chroma denoising with an approximate bilateral filter — a sparse 3x3 tap nonlinear kernel applied in two passes in YUV",
+   "notes": "One of the numbered finish steps in Section 6; colour correction uses a 3x3 matrix supplied by the ISP, and dynamic range compression, dehaze and global tone adjustment follow.",
+   "previous_value": null,
+   "quote": "Chroma denoising to reduce red and green splotches in dark areas of low-light images. For this we use an approximate bilateral filter, implemented using a sparse 3x3 tap nonlinear kernel applied in two passes in YUV.",
+   "source": {
+    "locator": "Section 6",
+    "publisher": "ACM",
+    "title": "Hasinoff et al., Burst photography for high dynamic range and low-light imaging on mobile cameras (SIGGRAPH Asia 2016, ACM Transactions on Graphics 35(6), Article 192)",
+    "type": "paper",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Night Sight produces clean, sharp, colourful photographs in light as low as 0.3 lux",
+   "notes": "At 0.3 lux human vision becomes monochromatic and indistinct; the system exceeds what the eye can see.",
+   "previous_value": null,
+   "quote": "In this paper we describe a system for capturing clean, sharp, colorful photographs in light as low as 0.3 lux, where human vision becomes monochromatic and indistinct.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Night Sight 'motion metering' estimates motion magnitudes (handshake or moving objects) to choose the frame count and per-frame exposure times that minimise both noise and motion blur",
+   "notes": "Motion metering is the scheduling brain of Night Sight: it shapes the exposure schedule dynamically, slower exposures for still scenes, faster for scenes with motion.",
+   "previous_value": null,
+   "quote": "Our system employs “motion metering”, which uses an estimate of motion magnitudes (whether due to handshake or moving objects) to identify the number of frames and the per-frame exposure times that together minimize both noise and motion blur in a captured burst.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Night Sight captures and merges a burst of 6–13 frames",
+   "notes": "Frame count is set by motion metering, not fixed: still scenes get more frames and longer exposures.",
+   "previous_value": null,
+   "quote": "Based on this exposure time, we capture and merge a burst of 6–13 frames (Section 3).",
+   "source": {
+    "locator": "Figure 2 caption",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Night Sight total capture time is 1–6 seconds after the shutter press and processing time is under 2 seconds",
+   "notes": "The 8-second maximum total (6 s capture + 2 s processing) is the hard budget in the requirements list.",
+   "previous_value": null,
+   "quote": "Total capture time is between 1 and 6 seconds after the shutter press and processing time is under 2 seconds.",
+   "source": {
+    "locator": "Figure 2 caption",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "In the Night Sight paper's 0.4 lux example, per-frame exposure was extended from 0.14 s to 0.33 s and the burst from 6 to 13 frames",
+   "notes": "The concrete motion-metering payoff: low scene motion buys longer exposures and more frames, which is what removes the noise.",
+   "previous_value": null,
+   "quote": "Our pipeline (c) produces detailed images by selecting a longer exposure time due to the low scene motion (in this setting, extended from 0.14 s to 0.33 s), robustly aligning and merging a larger number of frames (13 frames instead of 6), and reproducing colors reliably by training a model for predicting the white balance gains specifically in low light.",
+   "source": {
+    "locator": "Figure 1 caption",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Pre-capture motion metering estimates the flow field's magnitude in only 3 ms",
+   "notes": "Motion metering runs on viewfinder frames before the shutter press, so the schedule is ready when the burst starts.",
+   "previous_value": null,
+   "quote": "Pre-capture motion metering is also efficient and can estimate the flow field’s magnitude in only 3 ms.",
+   "source": {
+    "locator": "Section 6",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Night Sight uses a learning-based auto white balancing algorithm for accurate colour in low light",
+   "notes": "Low-light scenes often have strongly coloured light sources; the learned colour-constancy model is trained and evaluated with a novel metric.",
+   "previous_value": null,
+   "quote": "To ensure accurate colors in such low light, we employ a learning-based auto white balancing algorithm.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Night Sight tone mapping is inspired by illusionistic painting: increasing contrast, crushing shadows to black, surrounding the scene with darkness",
+   "notes": "The tone mapping deliberately keeps the photograph reading as a dark scene instead of making night look like day.",
+   "previous_value": null,
+   "quote": "To prevent the photographs from looking like they were shot in daylight, we use tone mapping techniques inspired by illusionistic painting: increasing contrast, crushing shadows to black, and surrounding the scene with darkness.",
+   "source": {
+    "locator": "Abstract",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Night Sight launched to the public in November 2018 on Google Pixel smartphones",
+   "notes": "The 2019 paper describes the system already shipping as Night Sight.",
+   "previous_value": null,
+   "quote": "Our system, which launched to the public in November 2018 as Night Sight on Google Pixel smartphones, is designed to satisfy the following requirements:",
+   "source": {
+    "locator": "Section 1",
+    "publisher": "ACM",
+    "title": "Liba et al., Handheld Mobile Photography in Very Low Light (SIGGRAPH Asia 2019, ACM Transactions on Graphics 38(6), Article 164)",
+    "type": "paper",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Tensor G3 includes a new ISP and Imaging DSP and a next-generation TPU custom-designed to run Google's AI models",
+   "notes": "Google's Tensor G3 blog lists every major subsystem as upgraded; the imaging split (new ISP + Imaging DSP + next-gen TPU) is the hardware behind the HDR+/Night Sight pipeline on Pixel 8.",
+   "previous_value": null,
+   "quote": "It includes the latest generation of ARM CPUs, an upgraded GPU, new ISP and Imaging DSP and our next-gen TPU, which was custom-designed to run Google’s AI models.",
+   "source": {
+    "locator": "Tensor G3 overview",
+    "publisher": "Google",
+    "title": "Google Tensor G3: Pixel 8 and Pixel 8 Pro’s AI-first processor (The Keyword, Oct 4, 2023)",
+    "type": "vendor blog",
+    "url": "https://blog.google/products-and-platforms/devices/pixel/google-tensor-g3-pixel-8/"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Pixel 8 phones run more than twice as many machine-learning models on-device as the first-generation Tensor on Pixel 6",
+   "notes": "The Tensor G3 blog's headline ML claim; the models themselves are also more sophisticated than on Tensor G1.",
+   "previous_value": null,
+   "quote": "Compared to the first generation of Tensor on Pixel 6, our latest phones run more than twice as many machine learning models on-device.",
+   "source": {
+    "locator": "Tensor G3 overview",
+    "publisher": "Google",
+    "title": "Google Tensor G3: Pixel 8 and Pixel 8 Pro’s AI-first processor (The Keyword, Oct 4, 2023)",
+    "type": "vendor blog",
+    "url": "https://blog.google/products-and-platforms/devices/pixel/google-tensor-g3-pixel-8/"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "On-device generative AI on Tensor G3 is 150 times more complex than the most complex model on Pixel 7",
+   "notes": "Google's complexity figure for the generative-AI workloads Tensor G3 was co-designed with Google Research to run.",
+   "previous_value": null,
+   "quote": "But of course, on-device generative AI is really complex: 150 times more complex than the most complex model on Pixel 7 just a year ago.",
+   "source": {
+    "locator": "Tensor G3 overview",
+    "publisher": "Google",
+    "title": "Google Tensor G3: Pixel 8 and Pixel 8 Pro’s AI-first processor (The Keyword, Oct 4, 2023)",
+    "type": "vendor blog",
+    "url": "https://blog.google/products-and-platforms/devices/pixel/google-tensor-g3-pixel-8/"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Tensor G3 optimised the camera pipeline and built ML algorithms into the silicon so Live HDR captures higher detail, colour, contrast and dynamic range in video",
+   "notes": "Live HDR is the video-side payoff of the same pipeline: every part of the SoC is used when recording video.",
+   "previous_value": null,
+   "quote": "We’ve optimized the camera pipeline and built machine learning algorithms directly into the silicon, making Live-HDR capable of capturing higher detail, with improved colors, contrast and dynamic range to videos on Pixel 8 and Pixel 8 Pro.",
+   "source": {
+    "locator": "A major upgrade for your photos and videos",
+    "publisher": "Google",
+    "title": "Google Tensor G3: Pixel 8 and Pixel 8 Pro’s AI-first processor (The Keyword, Oct 4, 2023)",
+    "type": "vendor blog",
+    "url": "https://blog.google/products-and-platforms/devices/pixel/google-tensor-g3-pixel-8/"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Video Boost pairs Tensor G3 with Google's data centres to apply HDR+ processing to video (colour, lighting, stabilisation, graininess) and enables Night Sight Video",
+   "notes": "Video Boost arrived on Pixel 8 Pro in the December 2023 Feature Drop; the cloud stage is the entry's fifth building block.",
+   "previous_value": null,
+   "quote": "Later this year, Pixel 8 Pro will get Video Boost, which pairs Tensor G3 with our powerful data centres to apply cutting-edge processing to your videos. It adjusts colour, lighting, stabilisation and graininess, and the result is stunning videos that look true to life. Video Boost also enables Night Sight Video on Pixel for better low-light smartphone video quality.",
+   "source": {
+    "locator": "More camera improvements",
+    "publisher": "Google",
+    "title": "Meet Pixel 8 and Pixel 8 Pro, our newest phones (The Keyword, Oct 5, 2023)",
+    "type": "vendor blog",
+    "url": "https://blog.google/intl/en-au/products/devices-services/meet-pixel-8-and-pixel-8-pro/"
+   },
+   "status": "verified"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Tensor G3 ISP internal sub-block organisation, queue depths, stage counts, per-stage latencies and bit depths are not published by Google; the Level-2 sub-blocks are the published pipeline stages of the HDR+ (2016) and Night Sight (2019) papers plus the Tensor G3 product blog, not a die-level hardware description",
+   "notes": "Level-2 boundary record, same form as the NVENC, VCN 4.0, Xe Media Engine, Spectra and WAVE Level-2 records. No new chip-specific number is claimed in the Level-2 sections beyond the paper and blog figures recorded here.",
+   "previous_value": null,
+   "quote": null,
+   "source": {
+    "locator": "No ISP block diagram, queue depths, stage counts or per-stage latencies in the 2016/2019 papers or the Tensor G3 / Pixel 8 product blogs",
+    "publisher": "Google",
+    "title": "Hasinoff et al. 2016; Liba et al. 2019; Google Tensor G3 blog (Oct 4, 2023); Google Pixel 8 launch blog (Oct 5, 2023)",
+    "type": "vendor papers and blogs",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "unverifiable"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Level-3 boundary (HDR+ burst pipeline): Google publishes no primitive-level geometry for the Tensor G3 ISP — no block diagram, no queue depths, no tile-buffer sizes, no FFT-array dimensions, no per-stage latencies — so every Level-3 primitive in the HDR+ burst pipeline block is mapped from the published five-stage pipeline of the 2016 HDR+ paper, not from a die diagram",
+   "notes": "Level-3 boundary record, same form as the Ambarella CV3 Level-3 boundary records. Generic constructions are labelled standard construction in the wiki text; pyramid level pixel counts, the tile-position count and the counter widths are arithmetic derived from the published figures and labelled as such.",
+   "previous_value": null,
+   "quote": null,
+   "source": {
+    "locator": "No ISP block diagram, queue depths, tile-buffer sizes, FFT-array dimensions or per-stage latencies in the 2016 paper or the Tensor G3 product blog",
+    "publisher": "Google",
+    "title": "Hasinoff et al. 2016; Google Tensor G3 blog (Oct 4, 2023)",
+    "type": "vendor paper and blog",
+    "url": "https://people.csail.mit.edu/hasinoff/pubs/HasinoffEtAl16-hdrplus.pdf"
+   },
+   "status": "unverifiable"
+  },
+  {
+   "current_value": null,
+   "date_checked": "2026-11-27",
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "Level-3 boundary (Night Sight + Video Boost): Google publishes no primitive-level geometry for the Night Sight pipeline — no queue depths, no flow-field buffer sizes, no per-stage latencies, no gyroscope interface — so every Level-3 primitive in the Night Sight and Video Boost block is mapped from the published Night Sight pipeline of the 2019 paper and the Tensor G3 product blogs, not from a die diagram",
+   "notes": "Level-3 boundary record, same form as the Ambarella CV3 Level-3 boundary records. Generic constructions are labelled standard construction in the wiki text; the frame-count counter width is arithmetic derived from the published 6-13 frame burst and labelled as such. The learned auto white balance model runs on the TPU, per the entry's building blocks.",
+   "previous_value": null,
+   "quote": null,
+   "source": {
+    "locator": "No ISP block diagram, queue depths, flow-field buffer sizes or per-stage latencies in the 2019 paper or the Tensor G3 / Pixel 8 product blogs",
+    "publisher": "Google",
+    "title": "Liba et al. 2019; Google Tensor G3 blog (Oct 4, 2023); Google Pixel 8 launch blog (Oct 5, 2023)",
+    "type": "vendor paper and blogs",
+    "url": "https://ar5iv.labs.arxiv.org/html/1910.11336"
+   },
+   "status": "unverifiable"
+  },
+  {
+   "entry": "Google Tensor G3 ISP + HDR+ Pipeline",
+   "fact": "No gate-level structure for the Tensor G3 ISP is published by Google — no netlist, standard-cell description or transistor count for the HDR+ pipeline, the Night Sight meter or the Video Boost path; the Level-4 decomposition is the textbook-standard construction of each Level-3 primitive, not a claim about Google's circuits.",
+   "status": "unverifiable",
+   "previous_value": null,
+   "current_value": null,
+   "source": {
+    "type": "academic papers and vendor product blog",
+    "title": "Hasinoff et al. 2016 HDR+ paper; Liba et al. 2019 Night Sight paper; Google Tensor G3 product blog (Oct 4, 2023)",
+    "publisher": "Google / SIGGRAPH Asia",
+    "url": "https://blog.google/products-and-platforms/devices/pixel/google-tensor-g3-pixel-8/",
+    "locator": "Five-stage HDR+ pipeline, Night Sight stages and Video Boost cloud stage at block level; no gate-level structure anywhere in the papers or the blog"
+   },
+   "quote": null,
+   "date_checked": "2026-11-27",
+   "notes": "Level-4 boundary record, same form as the NVENC, VCN 4.0, Xe Media Engine, Spectra, WAVE and Ambarella Level-4 records. All gate/transistor detail in the Level-4 sections is labelled textbook-standard construction in the wiki text and the corpus; no new chip-specific number is claimed. Arithmetic reused in Level-4 (8 frames need a 3-bit counter, ~187,500 tile positions need an 18-bit counter, 4 pyramid levels a 2-bit counter, 6-13 frames a 4-bit counter, 3x3 matrix nine multiplies and six adds per pixel, 2x2 Bayer average three adds and a shift, 3x3 tap kernel nine taps through eight adds) is derived from the published figures verified at Levels 2-3."
   }
  ],
  "schema": "silicon-zoo fact records v1 — one record per fact checked under Sai's fact standard (Nov 22, 2026)"
